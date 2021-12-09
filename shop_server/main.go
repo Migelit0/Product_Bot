@@ -5,33 +5,10 @@ import (
 	"log"
 	"os"
 
-	"./models"
 	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
-
-func InitialMigration() *gorm.DB {
-	e := godotenv.Load() //Загрузить файл .env
-	if e != nil {
-		fmt.Print(e)
-	}
-
-	username := os.Getenv("db_user")
-	password := os.Getenv("db_pass")
-	dbName := os.Getenv("db_name")
-	dbHost := os.Getenv("db_host")
-
-	dbUri := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable password=%s", dbHost, username, dbName, password) //Создать строку подключения
-	fmt.Println(dbUri)
-
-	db, err := gorm.Open("postgres", dbUri)
-	if err != nil {
-		fmt.Print(err)
-	}
-	db.AutoMigrate(&models.User{}, &models.Bag{}, &models.Product{})
-	defer db.Close()
-	return db
-}
 
 func CheckError(err error) {
 	if err != nil {
@@ -40,31 +17,34 @@ func CheckError(err error) {
 }
 
 func main() {
-	e := godotenv.Load() //Загрузить файл .env
-	if e != nil {
-		fmt.Print(e)
-	}
+	err := godotenv.Load() //Загрузить файл .env
+	CheckError(err)
 
 	username := os.Getenv("db_user")
 	password := os.Getenv("db_pass")
 	dbName := os.Getenv("db_name")
 	dbHost := os.Getenv("db_host")
 
-	dbUri := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable password=%s", dbHost, username, dbName, password) //Создать строку подключения
+	dbUri := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable password=%s", dbHost, username, dbName, password) // Создать строку подключения
 	fmt.Println(dbUri)
 
-	db, err := gorm.Open("postgres", dbUri)
+	conn, err := gorm.Open(postgres.Open(dbUri), &gorm.Config{}) // подключение к базе
 	CheckError(err)
 
-	defer db.Close()
+	db, err := conn.DB() // получаем управление базой
+	CheckError(err)
+
+	defer db.Close() // закрываем соединение
 
 	err = db.Ping() // проверяем работоспосбность базы
 	CheckError(err)
 
 	log.Println("Connected to db!")
 
-	insertTestData := `insert into "Products"("Name", "Price", "Categories") values($1, $2, $3)`
-	_, e = db.Exec(insertTestData, "Valio 3.5% 1l", 99.99, "молоко,напиток")
-	CheckError(e)
+	insertTestData := `SELECT * FROM products`
+	data, err := db.Exec(insertTestData) //, "Valio 3.5% 1l", 99.99, "молоко,напиток")
+	CheckError(err)
+
+	fmt.Println(data)
 
 }
