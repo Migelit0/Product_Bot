@@ -1,2 +1,3 @@
 shop_server/.env
 shop_server/libs
+*/.env
