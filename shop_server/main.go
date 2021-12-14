@@ -2,17 +2,27 @@ package main
 
 import (
 	"Product_Bot/shop_server/models"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+type application struct {
+	auth struct {
+		username string
+		password string
+	}
+}
 
 func addToBag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -48,6 +58,37 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 	CheckError(err)
 }
 
+func (app *application) protectedHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "This is the protected handler")
+}
+
+func (app *application) unprotectedHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "This is the unprotected handler")
+}
+
+func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if ok {
+			usernameHash := sha256.Sum256([]byte(username))
+			passwordHash := sha256.Sum256([]byte(password))
+			expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
+			expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
+
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
+
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
+}
+
 func searchProductByCategory(w http.ResponseWriter, r *http.Request) {
 	// подключаемся к базе
 	dbUri := getConnectrionString()
@@ -78,15 +119,6 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: homePage")
 }
 
-func handleRequests() {
-	myRouter := mux.NewRouter().StrictSlash(true) // создаем обработчик запросов
-	myRouter.HandleFunc("/", homePage)
-	myRouter.HandleFunc("/bag/{id}", addToBag)
-	myRouter.HandleFunc("/product/{id}", getProduct)
-	myRouter.HandleFunc("/search/product/{category}", searchProductByCategory)
-	log.Fatal(http.ListenAndServe(":5445", myRouter)) // запускаем обработчик ранее объявленного
-}
-
 func getConnectrionString() string {
 	err := godotenv.Load("C:\\Users\\mmpan\\go\\src\\Product_Bot\\shop_server\\.env") //Загрузить файл .env
 	fmt.Println(err)
@@ -102,8 +134,36 @@ func getConnectrionString() string {
 }
 
 func main() {
-	fmt.Println("Started REST API v0.1 - Shop Server")
-	handleRequests()
+	app := new(application)
+	//fmt.Println(os.Getenv("auth_username"))
+	app.auth.username = os.Getenv("auth_username")
+	app.auth.password = os.Getenv("auth_username")
+
+	if app.auth.username == "" {
+		log.Fatal("basic auth username must be provided")
+	}
+
+	if app.auth.password == "" {
+		log.Fatal("basic auth password must be provided")
+	}
+
+	myRouter := http.NewServeMux()
+	myRouter.HandleFunc("/", app.basicAuth(homePage))
+	myRouter.HandleFunc("/bag/{id}", app.basicAuth(addToBag))
+	myRouter.HandleFunc("/product/{id}", app.basicAuth(getProduct))
+	myRouter.HandleFunc("/search/product/{category}", app.basicAuth(searchProductByCategory))
+
+	srv := &http.Server{
+		Addr:         ":5445",
+		Handler:      myRouter,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
+
+	log.Printf("starting shop api on %s", srv.Addr)
+	err := srv.ListenAndServeTLS("./localhost.pem", "./localhost-key.pem")
+	log.Fatal(err)
 
 }
 

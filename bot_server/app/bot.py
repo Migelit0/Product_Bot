@@ -35,6 +35,7 @@ class Bot:
             self.answers = json.loads(file.read())
 
     def get_answer(self, response: str):
+        """ Суем сообщение в обработчик малой модели """
         return self.small_model.request(response)
 
     def get_response_type(self, response: str):
@@ -53,7 +54,7 @@ class Bot:
         return None, 'B'
 
     def big_handler(self):
-        """ Здесь полномочия маленькой модели все, заапускаем тяжелую аретллерию """
+        """ Здесь полномочия малой модели все, заапускаем тяжелую аретллерию """
         return 'Big Model Message', 'M'
 
 
