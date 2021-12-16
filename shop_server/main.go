@@ -26,9 +26,10 @@ type application struct {
 
 func addToBag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	userId := vars["id"]
+	userId := vars["user_id"]
+	productId := vars["product_id"]
 
-	fmt.Println(w, "ID: "+userId)
+	fmt.Println(w, "ID: "+userId, "Ordered: "+productId)
 }
 
 func getProduct(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +162,7 @@ func main() {
 
 	myRouter := mux.NewRouter()
 	myRouter.HandleFunc("/", app.basicAuth(homePage))
-	myRouter.HandleFunc("/bag/{id}", app.basicAuth(addToBag))
+	myRouter.HandleFunc("/bag/{user_id}/{product_id}", app.basicAuth(addToBag))
 	myRouter.HandleFunc("/product/{id}", app.basicAuth(getProduct))
 	myRouter.HandleFunc("/search/product/{category}", app.basicAuth(searchProductByCategory))
 

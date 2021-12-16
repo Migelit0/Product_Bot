@@ -31,31 +31,35 @@ class Bot:
         self.small_model.train_model()
         # self.small_model.save_model()
 
-        with open('intents.json', 'rb') as file:
+        self.message = ''   # буфер для возвращаегося значения
+
+        with open('intents.json', 'r') as file:
             self.answers = json.loads(file.read())
 
     def get_answer(self, response: str):
         """ Суем сообщение в обработчик малой модели """
-        return self.small_model.request(response)
+        self.small_model.request(response)
+        return self.message
 
     def get_response_type(self, response: str):
         """ Возращает тип запроса (купить, просто сообщение, из списка) """
 
     def function_for_greetings(self):
         """ возращает сообщение чтобы поздороваться """
-        return choice(get_messages_by_tag(self.answers['intents'], 'greeting'))
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'greeting')), 'M'
 
     def buy_one_thing(self):
         """ Возращает пустое сообщение, чтобы основной код сделал заказ на продукт """
-        return None, "P"
+        self.message = None, 'P'
 
     def buy_all_bag(self):
         """ Возращает пустое сообщение, чтобы основной код сделал заказ на корзину """
-        return None, 'B'
+        self.message = None, 'B'
 
     def big_handler(self):
         """ Здесь полномочия малой модели все, заапускаем тяжелую аретллерию """
-        return 'Big Model Message', 'M'
+        # TODO: ответ большей модели
+        self.message = 'Big Model Message', 'M'
 
 
 if __name__ == '__main__':
@@ -68,4 +72,4 @@ if __name__ == '__main__':
         if message == 'STOP':
             done = True
         else:
-            assistant.get_answer(message)
+            print(assistant.get_answer(message))
