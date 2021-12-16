@@ -4,7 +4,6 @@ import telebot
 from dotenv import load_dotenv
 from app.bot import Bot
 
-from nlp.app import *
 
 load_dotenv()
 TOKEN = os.getenv('API_KEY')

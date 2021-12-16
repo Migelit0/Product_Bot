@@ -104,13 +104,21 @@ func searchProductByCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	productCategory := vars["category"]
 
-	sqlRequest := `SELECT * FROM "products" WHERE categories LIKE $1;`
+	sqlRequest := `SELECT * FROM "products" WHERE categories LIKE $1;` // строка для импорта данных
 
-	var product models.Product
-	conn.Raw(sqlRequest, "%"+productCategory+"%").Scan(&product)
+	raw, err := db.Query(sqlRequest, "%"+productCategory+"%")
+	CheckError(err)
 
-	log.Println(product)
-	err = json.NewEncoder(w).Encode(product)
+	var products []models.Product
+	for raw.Next() { // добавляем все данные из бд в массив
+		p := models.Product{}
+		err := raw.Scan(&p.ID, &p.Name, &p.Price, &p.Categories)
+		CheckError(err)
+		products = append(products, p)
+	}
+
+	log.Println(products)
+	err = json.NewEncoder(w).Encode(products)
 	CheckError(err)
 }
 
@@ -136,6 +144,10 @@ func getConnectrionString() string {
 func main() {
 	app := new(application)
 	//fmt.Println(os.Getenv("auth_username"))
+
+	err := godotenv.Load("C:\\Users\\mmpan\\go\\src\\Product_Bot\\shop_server\\.env") //Загрузить файл .env
+	fmt.Println(err)
+	CheckError(err)
 	app.auth.username = os.Getenv("auth_username")
 	app.auth.password = os.Getenv("auth_username")
 
@@ -147,7 +159,7 @@ func main() {
 		log.Fatal("basic auth password must be provided")
 	}
 
-	myRouter := http.NewServeMux()
+	myRouter := mux.NewRouter()
 	myRouter.HandleFunc("/", app.basicAuth(homePage))
 	myRouter.HandleFunc("/bag/{id}", app.basicAuth(addToBag))
 	myRouter.HandleFunc("/product/{id}", app.basicAuth(getProduct))
@@ -162,7 +174,7 @@ func main() {
 	}
 
 	log.Printf("starting shop api on %s", srv.Addr)
-	err := srv.ListenAndServeTLS("./localhost.pem", "./localhost-key.pem")
+	err = srv.ListenAndServe()
 	log.Fatal(err)
 
 }
