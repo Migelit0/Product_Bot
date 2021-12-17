@@ -40,7 +40,12 @@ func addToBag(w http.ResponseWriter, r *http.Request) {
 	userId := vars["user_id"]
 	productId := vars["product_id"]
 
-	fmt.Println(w, "ID: "+userId, "Ordered: "+productId)
+	sqlRequest := `UPDATE users SET bag=(bag||';'||$1) WHERE id=$2;` // строка для импорта данных
+	raw, err := db.Query(sqlRequest, productId, userId)
+	CheckError(err)
+	fmt.Println(raw)
+
+	fmt.Fprintf(w, "true") // отправляем, что все круто
 }
 
 func getProduct(w http.ResponseWriter, r *http.Request) {

@@ -21,17 +21,17 @@ class DeliveryBot:
         self.basicAuthCredentials = HTTPBasicAuth(self.user_http, self.pass_http)
         self.server_ip = server_ip
         self.server_port = server_port
-        # self.conn_http = client.
+        self.http_url = f'http://{self.server_ip}:{self.server_port}'
 
     def request_by_category(self, category: str, user_id: int):
         """ Делает заказ, основываясь на выбранной категории и рекомендациях для данного пользователя """
-        all_data = requests.get(f'http://{self.server_ip}:{self.server_port}/search/product/{category}',
-                                auth=self.basicAuthCredentials).json()
+        url = self.http_url + f'/search/product/{category}'
+        all_data = requests.get(url, auth=self.basicAuthCredentials).json()
 
         ids = [i['id'] for i in all_data]
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
-            cursor.execute('SELECT product_id FROM product_recommendations WHERE product_id IN %s ORDER BY purchases_number;',
-                           (tuple(ids),))
+            sql_str = 'SELECT product_id FROM product_recommendations WHERE product_id IN %s ORDER BY purchases_number;'
+            cursor.execute(sql_str, (tuple(ids),))
 
             try:
                 for elem in cursor:
@@ -40,29 +40,37 @@ class DeliveryBot:
             except IndexError:  # не существует рекомендации на эту категорию для данного пользователя
                 return NoRecommendationError
 
-        err = requests.get(f'http://{self.server_ip}:{self.server_port}/bag/{user_id}/{product_id}',
-                           auth=self.basicAuthCredentials).json()
+        url = self.http_url + '/bag/{user_id}/{product_id}'
+        is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
 
-        if err:  # отловиили ошибку (пипец го-стайл)
-            return err
+        if not is_ok:  # отловиили ошибку (пипец го-стайл)
+            return False
 
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
             # обновлем количество покупок данного товара
-            cursor.execute(
-                'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE  product_id=$1;',
-                (product_id,))
+            sql_str = 'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE  product_id=$1;'
+            cursor.execute(sql_str, (product_id,))
         self.conn_db.commit()
-        return True  # все круто сделали молодцы отправляем отчет
+        return True  # все круто сделали ребята вообще ребята молодцы отправляем отчет
 
     def get_id_by_tg(self, tg_id: int):
         """ Возращает id в системе магазина по id в телеге """
+        with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute('SELECT shop_id FROM bot_users WHERE tg_id=%s;',
+                           (str(tg_id),))
+
+            try:
+                for elem in cursor:
+                    return elem[0]
+            except Exception:
+                return NoUserError
+        return None
 
 
 if __name__ == '__main__':
     basicAuthCredentials = HTTPBasicAuth('testtest', 'testtest')
 
-    #print(requests.get(f'http://localhost:5445/search/product/молоко', auth=basicAuthCredentials).json())
-    test = DeliveryBot('shop_server', 'shop_server', 'IAmPostgresUser', 'migelit0.online', ('testtest', 'testtest'),
-                       'localhost', '5445')
+    # print(requests.get(f'http://localhost:5445/search/product/молоко', auth=basicAuthCredentials).json())
+    print(requests.get(f'http://localhost:5445/bag/1/88', auth=basicAuthCredentials).json())
 
-    print(test.request_by_category('молоко', 1))
+    # print(test.request_by_category('молоко', 1))
