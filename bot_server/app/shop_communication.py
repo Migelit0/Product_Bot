@@ -25,13 +25,18 @@ class DeliveryBot:
 
     def request_by_category(self, category: str, user_id: int):
         """ Делает заказ, основываясь на выбранной категории и рекомендациях для данного пользователя """
-        all_data = requests.get(f'http://{self.server_ip}:{self.server_port}/serch/product/{category}',
+        all_data = requests.get(f'http://{self.server_ip}:{self.server_port}/search/product/{category}',
                                 auth=self.basicAuthCredentials).json()
+
         ids = [i['id'] for i in all_data]
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
-            cursor.execute('SELECT id FROM product_recommendations WHERE id IN $1 ORDER BY purchases_number;', (ids,))
+            cursor.execute('SELECT product_id FROM product_recommendations WHERE product_id IN %s ORDER BY purchases_number;',
+                           (tuple(ids),))
+
             try:
-                product_id = cursor[0]
+                for elem in cursor:
+                    product_id = elem[0]
+                    break
             except IndexError:  # не существует рекомендации на эту категорию для данного пользователя
                 return NoRecommendationError
 
@@ -46,6 +51,8 @@ class DeliveryBot:
             cursor.execute(
                 'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE  product_id=$1;',
                 (product_id,))
+        self.conn_db.commit()
+        return True  # все круто сделали молодцы отправляем отчет
 
     def get_id_by_tg(self, tg_id: int):
         """ Возращает id в системе магазина по id в телеге """
@@ -54,4 +61,8 @@ class DeliveryBot:
 if __name__ == '__main__':
     basicAuthCredentials = HTTPBasicAuth('testtest', 'testtest')
 
-    print(requests.get(f'http://localhost:5445/search/product/молоко', auth=basicAuthCredentials).json())
+    #print(requests.get(f'http://localhost:5445/search/product/молоко', auth=basicAuthCredentials).json())
+    test = DeliveryBot('shop_server', 'shop_server', 'IAmPostgresUser', 'migelit0.online', ('testtest', 'testtest'),
+                       'localhost', '5445')
+
+    print(test.request_by_category('молоко', 1))

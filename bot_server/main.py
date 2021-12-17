@@ -51,4 +51,4 @@ def answer_brilliant(message):
 
             for category in categories_data:
                 if word == category or word in categories_data[category]:   # word является категорией, надо заказать
-                    net_bot.request_by_category(word, net_bot.get_id_by_tg(message.from_user.id))
+                    net_bot.request_by_category(category, net_bot.get_id_by_tg(message.from_user.id))
