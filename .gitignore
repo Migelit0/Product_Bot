@@ -1,3 +1,4 @@
 shop_server/.env
+bot_server/.env
 shop_server/libs
 */.env

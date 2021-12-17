@@ -25,6 +25,17 @@ type application struct {
 }
 
 func addToBag(w http.ResponseWriter, r *http.Request) {
+	// подключаемся к базе
+	dbUri := getConnectrionString()
+	conn, err := gorm.Open(postgres.Open(dbUri), &gorm.Config{}) // подключение к базе
+	CheckError(err)
+	db, err := conn.DB() // получаем управление базой
+	CheckError(err)
+	defer db.Close() // закрываем соединение
+	err = db.Ping()  // проверяем работоспосбность базы
+	CheckError(err)
+	log.Println("Connected to db!") // вот и подключились
+
 	vars := mux.Vars(r)
 	userId := vars["user_id"]
 	productId := vars["product_id"]
@@ -61,10 +72,6 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) protectedHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "This is the protected handler")
-}
-
-func (app *application) unprotectedHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "This is the unprotected handler")
 }
 
 func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
