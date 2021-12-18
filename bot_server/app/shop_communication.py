@@ -25,7 +25,7 @@ class DeliveryBot:
 
     def request_by_category(self, category: str, user_id: int):
         """ Делает заказ, основываясь на выбранной категории и рекомендациях для данного пользователя """
-        url = self.http_url + f'/search/product/{category}'
+        url = self.http_url + f'/search/product/category/{category}'
         all_data = requests.get(url, auth=self.basicAuthCredentials).json()
 
         ids = [i['id'] for i in all_data]
@@ -56,8 +56,7 @@ class DeliveryBot:
     def get_id_by_tg(self, tg_id: int):
         """ Возращает id в системе магазина по id в телеге """
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
-            cursor.execute('SELECT shop_id FROM bot_users WHERE tg_id=%s;',
-                           (str(tg_id),))
+            cursor.execute('SELECT shop_id FROM bot_users WHERE tg_id=%s;', (str(tg_id),))
 
             try:
                 for elem in cursor:
@@ -65,6 +64,9 @@ class DeliveryBot:
             except Exception:
                 return NoUserError
         return None
+
+    def request_bag(self):
+
 
 
 if __name__ == '__main__':

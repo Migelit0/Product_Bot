@@ -135,6 +135,40 @@ func searchProductByCategory(w http.ResponseWriter, r *http.Request) {
 	CheckError(err)
 }
 
+func searchProductByName(w http.ResponseWriter, r *http.Request) {
+	// подключаемся к базе
+	dbUri := getConnectrionString()
+	conn, err := gorm.Open(postgres.Open(dbUri), &gorm.Config{}) // подключение к базе
+	CheckError(err)
+	db, err := conn.DB() // получаем управление базой
+	CheckError(err)
+	defer db.Close() // закрываем соединение
+	err = db.Ping()  // проверяем работоспосбность базы
+	CheckError(err)
+	log.Println("Connected to db!") // вот и подключились
+
+	vars := mux.Vars(r)
+	productName := vars["name"]
+	maxValue := 0.7
+
+	sqlRequest := `SELECT * FROM "products" WHERE similarity(name, $1) >= $2;` // строка для импорта данных
+
+	raw, err := db.Query(sqlRequest, productName, maxValue)
+	CheckError(err)
+
+	var products []models.Product
+	for raw.Next() { // добавляем все данные из бд в массив
+		p := models.Product{}
+		err := raw.Scan(&p.ID, &p.Name, &p.Price, &p.Categories)
+		CheckError(err)
+		products = append(products, p)
+	}
+
+	log.Println(products)
+	err = json.NewEncoder(w).Encode(products)
+	CheckError(err)
+}
+
 func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the HomePage!")
 	fmt.Println("Endpoint Hit: homePage")
@@ -176,7 +210,8 @@ func main() {
 	myRouter.HandleFunc("/", app.basicAuth(homePage))
 	myRouter.HandleFunc("/bag/{user_id}/{product_id}", app.basicAuth(addToBag))
 	myRouter.HandleFunc("/product/{id}", app.basicAuth(getProduct))
-	myRouter.HandleFunc("/search/product/{category}", app.basicAuth(searchProductByCategory))
+	myRouter.HandleFunc("/search/product/category/{category}", app.basicAuth(searchProductByCategory))
+	myRouter.HandleFunc("/search/product/name/{name}", app.basicAuth(searchProductByName))
 
 	srv := &http.Server{
 		Addr:         ":5445",
