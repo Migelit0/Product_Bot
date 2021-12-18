@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import random
 from random import choice
 
 from neuralintents import GenericAssistant
@@ -18,20 +19,21 @@ class Bot:
     B - запрос на заказ корзины
     """
 
-    def __init__(self, name='Григорий'):
+    def __init__(self, jokes: dict, name='Григорий'):
         self.name = name
+        self.jokes = jokes
         # self.small_model = small_model  # легкая модель на сонове тщательно написанных ответов ранее
         # self.big_model = big_model  # модель на основе gpt-2, используется, если ответы ранее не были найдены
 
         mappings = {'greeting': self.function_for_greetings, 'empty': self.big_handler, 'buy': self.buy_one_thing,
-                    'bag': self.buy_all_bag}
+                    'bag': self.buy_all_bag, 'joke': self.tell_joke}
         # создаем модель, объявляем обработчики для каждого типа сообщений
         self.small_model = GenericAssistant('intents.json', intent_methods=mappings, model_name="small_model")
         # тренируем модель (ибо я хз как загружать уже созданную, а дедлайн просраьт не хочется)
         self.small_model.train_model()
         # self.small_model.save_model()
 
-        self.message = ''   # буфер для возвращаегося значения
+        self.message = ''  # буфер для возвращаегося значения
 
         with open('intents.json', 'r') as file:
             self.answers = json.loads(file.read())
@@ -55,6 +57,15 @@ class Bot:
     def buy_all_bag(self):
         """ Возращает пустое сообщение, чтобы основной код сделал заказ на корзину """
         self.message = None, 'B'
+
+    def tell_joke(self):
+        """ Возращает случайный анекдот """
+        index = random.randint(1, len(self.jokes))
+        return self.jokes[str(index)], 'M'
+
+    def update_jokes(self, new_jokes: dict):
+        """ Обновление набора золотых анекдотов """
+        self.jokes = new_jokes
 
     def big_handler(self):
         """ Здесь полномочия малой модели все, заапускаем тяжелую аретллерию """
