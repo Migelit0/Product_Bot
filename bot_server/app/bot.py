@@ -8,7 +8,7 @@ from random import choice
 from aitextgen import aitextgen
 from neuralintents import GenericAssistant
 
-from utils import get_messages_by_tag
+from utilities import get_messages_by_tag
 
 
 class Bot:

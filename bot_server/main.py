@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from app.bot import Bot
 from app.shop_communication import DeliveryBot
-from app.utils import format_text
+from app.utilities import format_text
 
 
 if __name__ == '__main__':
