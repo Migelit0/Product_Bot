@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
 import random
 from random import choice
 
+from aitextgen import aitextgen
 from neuralintents import GenericAssistant
 
-from utils import *
+from utils import get_messages_by_tag
 
 
 class Bot:
@@ -19,24 +21,44 @@ class Bot:
     B - запрос на заказ корзины
     """
 
-    def __init__(self, jokes: dict, name='Григорий'):
+    def __init__(self, jokes: dict, big_model_path: str, name='Григорий'):
         self.name = name
         self.jokes = jokes
-        # self.small_model = small_model  # легкая модель на сонове тщательно написанных ответов ранее
-        # self.big_model = big_model  # модель на основе gpt-2, используется, если ответы ранее не были найдены
+        self.message = ''  # буфер для возвращаегося значения
+        self.chat = ['привет']
+        self.start_temperature = 0.5
+        self.max_temperature = 7.0
 
+        with open('intents.json', 'r') as file:
+            self.answers = json.loads(file.read())
+
+        # self.small_model = small_model
+        # self.big_model = big_model
+
+        # создаем малую модель, объявляем обработчики для каждого типа сообщений
         mappings = {'greeting': self.function_for_greetings, 'empty': self.big_handler, 'buy': self.buy_one_thing,
                     'bag': self.buy_all_bag, 'joke': self.tell_joke}
-        # создаем модель, объявляем обработчики для каждого типа сообщений
-        self.small_model = GenericAssistant('intents.json', intent_methods=mappings, model_name="small_model")
+
+        self.small_model = GenericAssistant('intents.json', intent_methods=mappings,
+                                            model_name="small_model")  # легкая модель на сонове тщательно написанных ответов ранее
         # тренируем модель (ибо я хз как загружать уже созданную, а дедлайн просраьт не хочется)
         self.small_model.train_model()
         # self.small_model.save_model()
 
-        self.message = ''  # буфер для возвращаегося значения
+        files = os.listdir(big_model_path)
+        files.remove('.gitkeep')
+        folder_name = files[0]
 
-        with open('intents.json', 'r') as file:
-            self.answers = json.loads(file.read())
+        model_path = os.path.join(".", "pistoBot", "data", "models_trained", folder_name, "pytorch_model.bin")
+        config_path = os.path.join(".", "pistoBot", "data", "models_trained", folder_name, "config.json")
+        vocab_path = os.path.join(".", "pistoBot", "data", "models_trained", folder_name, "aitextgen-vocab.json")
+        merges_path = os.path.join(".", "pistoBot", "data", "models_trained", folder_name, "aitextgen-merges.txt")
+
+        self.big_model = aitextgen(model=model_path,
+                                   config=config_path,
+                                   vocab_file=vocab_path,
+                                   merges_file=merges_path,
+                                   to_gpu=False)  # модель на основе gpt-2, используется, если ответы ранее не были найдены
 
     def get_answer(self, response: str):
         """ Суем сообщение в обработчик малой модели """
@@ -67,20 +89,36 @@ class Bot:
         """ Обновление набора золотых анекдотов """
         self.jokes = new_jokes
 
-    def big_handler(self):
+    def big_handler(self, message):
         """ Здесь полномочия малой модели все, заапускаем тяжелую аретллерию """
-        # TODO: ответ большей модели
-        self.message = 'Big Model Message', 'M'
+        me_token = False
+        temperature = self.start_temperature
+        input_network = message
+        answer = 'Повторите пожалуйста'
+
+        while not me_token:
+            text = self.big_model.generate(prompt=input_network,
+                                           return_as_list=True,
+                                           temperature=temperature)
+            text = text[0].split('\n')
+
+            if len(text) <= 1:  # убираем случаи, если не получилось сгенерить ответы
+                continue
+
+            network_reply = text[1]
+
+            if network_reply.startswith('[me]'):
+                me_token = True
+                answer = network_reply
+            else:
+                if temperature >= self.max_temperature:
+                    temperature = self.start_temperature
+                    me_token = True
+                    # raise RuntimeError("Max temperature reached")
+            temperature += 0.1
+
+        return answer, 'M'
 
 
 if __name__ == '__main__':
     assistant = Bot()
-
-    done = False
-
-    while not done:
-        message = input('Enter a message: ')
-        if message == 'STOP':
-            done = True
-        else:
-            print(assistant.get_answer(message))

@@ -10,6 +10,10 @@ from app.utils import format_text
 
 
 if __name__ == '__main__':
+    # загружаем анекдоты
+    with open('data/jokes.json', 'r') as file:
+        jokes = json.loads(file.read())
+
     # читаем данные из .env
     load_dotenv()
     TOKEN = os.getenv('API_KEY')
@@ -27,7 +31,7 @@ if __name__ == '__main__':
 
     # инициализация всех систем
     bot = telebot.TeleBot(TOKEN)
-    nlp_bot = Bot()
+    nlp_bot = Bot(jokes, './data/models_trained/')
     net_bot = DeliveryBot(db_name, db_user, db_pass, db_host, (http_user, http_pass), server_ip, server_port)
 
 

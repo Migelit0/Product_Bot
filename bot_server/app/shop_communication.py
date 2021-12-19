@@ -66,13 +66,19 @@ class DeliveryBot:
         return None
 
     def request_bag(self):
-
+        pass
 
 
 if __name__ == '__main__':
     basicAuthCredentials = HTTPBasicAuth('testtest', 'testtest')
 
     # print(requests.get(f'http://localhost:5445/search/product/молоко', auth=basicAuthCredentials).json())
-    print(requests.get(f'http://localhost:5445/bag/1/88', auth=basicAuthCredentials).json())
+    #print(requests.get(f'http://localhost:5445/bag/1/88', auth=basicAuthCredentials).json())
 
     # print(test.request_by_category('молоко', 1))
+
+    for x in range(1, 11):
+        for y in range(1, 17):
+            for z in range(1, 26):
+                if (y-z)>0 and (x-y)>0 and (y-z)%5==0 and (x-y)%3==0:
+                    print(x, y, z)
