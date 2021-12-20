@@ -1,0 +1,29 @@
+data:
+  file_path: ./data/inputs/chat_parsed/all-messages-endoftext.txt
+generation:
+  batch_size: 1
+  cleanup: true
+  early_stopping: false
+  max_length: 256
+  n_text: 100
+  num_beams: 1
+  prefix: '[others] ciao!'
+  repetition_penalty: 1.0
+  seed: 42
+  temperature: 0.7
+  top_p: 0.9
+ml:
+  model_dropout: 0.0
+  model_max_length: 32
+  model_n_embd: 256
+  model_n_head: 8
+  model_n_layer: 8
+  save_path: ./data/models_trained/
+  tokenizer_dropout: 0.0
+  tokens_min_frequency: 2
+  train_batch_size: 256
+  train_generate_every: 5000
+  train_learning_rate: 0.0001
+  train_save_every: 1000
+  train_steps: 30000
+  vocab_size: 5000
