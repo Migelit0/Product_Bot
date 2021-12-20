@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import re
 
 import nltk
@@ -12,8 +14,8 @@ def get_messages_by_tag(data: list, tag: str):
 
 
 def format_text(message: str):
-    formated = re.sub(r'[^ еЁА-яa-z]', '',
-                      str(message).lower())  # Преобразуем в нижний регистр. Удаоляем ненужные символы
+    formated = re.sub(r'[^ РµРЃРђ-СЏa-z]', '',
+                      str(message).lower())  # РџСЂРµРѕР±СЂР°Р·СѓРµРј РІ РЅРёР¶РЅРёР№ СЂРµРіРёСЃС‚СЂ. РЈРґР°РѕР»СЏРµРј РЅРµРЅСѓР¶РЅС‹Рµ СЃРёРјРІРѕР»С‹
     tokens = nltk.word_tokenize(formated)
     lema = wordnet.WordNetLemmatizer()
     tags_list = pos_tag(tokens, tagset=None)

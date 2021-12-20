@@ -5,7 +5,7 @@ import requests
 from psycopg2.extras import DictCursor
 from requests.auth import HTTPBasicAuth
 
-from models import *
+from app.models import *
 
 
 class DeliveryBot:
@@ -40,7 +40,7 @@ class DeliveryBot:
             except IndexError:  # не существует рекомендации на эту категорию для данного пользователя
                 return NoRecommendationError
 
-        url = self.http_url + '/bag/{user_id}/{product_id}'
+        url = self.http_url + f'/bag/{user_id}/{product_id}'    # запрос на добавление в корзину
         is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
 
         if not is_ok:  # отловиили ошибку (пипец го-стайл)
