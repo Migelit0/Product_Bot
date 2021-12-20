@@ -34,7 +34,8 @@ class Bot:
 
         # создаем малую модель, объявляем обработчики для каждого типа сообщений
         mappings = {'greeting': self.function_for_greetings, 'empty': self.big_handler, 'buy': self.buy_one_thing,
-                    'bag': self.buy_all_bag, 'joke': self.tell_joke}
+                    'bag': self.buy_all_bag, 'joke': self.tell_joke, 'howreu': self.function_howareyou}
+        # TODO: Подключить остальные группы ответов
 
         self.small_model = GenericAssistant('app/intents.json', intent_methods=mappings,
                                             model_name="small_model")  # легкая модель на сонове тщательно написанных ответов ранее
@@ -69,6 +70,9 @@ class Bot:
     def function_for_greetings(self):
         """ возращает сообщение чтобы поздороваться """
         self.message = choice(get_messages_by_tag(self.answers['intents'], 'greeting')), 'M'
+
+    def function_howareyou(self):
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'howreu')), 'M'
 
     def buy_one_thing(self):
         """ Возращает пустое сообщение, чтобы основной код сделал заказ на продукт """
@@ -112,6 +116,7 @@ class Bot:
                 if temperature >= self.max_temperature:
                     temperature = self.start_temperature
                     me_token = True
+                    answer = 'Повторите пожалуйста'
                     # raise RuntimeError("Max temperature reached")
             temperature += 0.1
 
