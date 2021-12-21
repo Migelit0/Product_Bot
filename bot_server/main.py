@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 import os
 
 import coloredlogs
-import logging
 import telebot
 from dotenv import load_dotenv
 
@@ -18,11 +18,11 @@ if __name__ == '__main__':
     coloredlogs.install(level='DEBUG')
 
     # загружаем анекдоты
-    with open('data/jokes.json', 'r') as file:
+    with open('data/jokes.json', 'r', encoding='utf-8') as file:
         jokes = json.loads(file.read())
 
     # загружаем ответы бота
-    with open('app/intents.json', 'r') as file:
+    with open('app/intents.json', 'r', encoding='utf-8') as file:
         intents = json.loads(file.read())
 
     # читаем данные из .env
@@ -59,7 +59,7 @@ def welcome_message(message):
                      'https://github.com/Migelit0/Product_Bot')
 
 
-@bot.message_handler(func=lambda _: True)
+@bot.message_handler(content_types=['text'])
 def answer_brilliant(message):
     """ Перехватываем все сообщения """
     text = format_text(message.text)
@@ -68,13 +68,27 @@ def answer_brilliant(message):
     if answer_type == 'M':
         bot.send_message(message.from_user.id, answer)
     elif answer_type == 'B':
+        requested_categories = []  # запоминаем категории которые закалази для дальнейшего отчета
         for word in text:
             with open('data/categories.json', 'r') as file:
                 categories_data = json.loads(file.read())
 
-            for category in categories_data:
+            for category in categories_data:  # парсим все слова на предмет категории
                 if word == category or word in categories_data[category]:  # word является категорией, надо заказать
                     net_bot.request_by_category(category, net_bot.get_id_by_tg(message.from_user.id))
+                requested_categories.append(category)
+
+        if len(requested_categories) >= 1:
+            bot.send_message(message.from_user.id,
+                             f'Добавил в корзину продукты из категорий {", ".join(requested_categories)}')
+        else:
+            bot.send_message(message.from_user.id, 'Извините, я не нашел продуктов в вашем сообщении')
+
+
+@bot.message_handler(
+    content_types=['sticker', 'document', 'audio', 'photo', 'video', 'video_note', 'voice', 'location', 'contact'])
+def not_text_answer(message):
+    bot.send_message(message.from_user.id, 'Буквами пиши але')
 
 
 logger.info('Started telegram bot')

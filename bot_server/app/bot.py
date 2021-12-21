@@ -22,24 +22,26 @@ class Bot:
     def __init__(self, jokes: dict, big_model_path: str, intents: dict, name='Григорий'):
         self.name = name
         self.jokes = jokes
-        self.message = ('', '')  # буферы для значений
-        self.response = ''
+
         self.start_temperature = 0.5
         self.max_temperature = 7.0
 
+        self.message = ('', '')  # буферы для значений
+        self.response = ''
+        # Зачем? Потому что мы не можем возращать значения функций, которые вызывает нейронка, и давает ей аргументы
+        # Почему так можно? Потому что Питон линейный и не перемутает сообщения
+
         self.answers = intents
 
-        # self.small_model = small_model
-        # self.big_model = big_model
-
         # создаем малую модель, объявляем обработчики для каждого типа сообщений
-        mappings = {'greeting': self.function_for_greetings, 'empty': self.big_handler, 'buy': self.buy_one_thing,
-                    'bag': self.buy_all_bag, 'joke': self.tell_joke, 'howreu': self.function_howareyou}
+        mappings = {'empty': self.big_handler, 'greeting': self.function_greeting, 'buy': self.buy_one_thing,
+                    'bag': self.buy_all_bag, 'joke': self.tell_joke, 'howreu': self.function_howareyou,
+                    'goodbye': self.function_goodbye}
         # TODO: Подключить остальные группы ответов
 
         self.small_model = GenericAssistant('app/intents.json', intent_methods=mappings,
                                             model_name="small_model")  # легкая модель на сонове тщательно написанных ответов ранее
-        # тренируем модель (ибо я хз как загружать уже созданную, а дедлайн просраьт не хочется)
+        # тренируем модель (ибо я хз как загружать уже созданную, а дедлайн просраьт не хочется
         self.small_model.train_model()
         # self.small_model.save_model()
 
@@ -64,15 +66,17 @@ class Bot:
         self.small_model.request(response)
         return self.message
 
-    def get_response_type(self):
-        """ Возращает тип запроса (купить, просто сообщение, из списка) """
-
-    def function_for_greetings(self):
+    def function_greeting(self):
         """ возращает сообщение чтобы поздороваться """
         self.message = choice(get_messages_by_tag(self.answers['intents'], 'greeting')), 'M'
 
     def function_howareyou(self):
+        """ отвечает как дела """
         self.message = choice(get_messages_by_tag(self.answers['intents'], 'howreu')), 'M'
+
+    def function_goodbye(self):
+        """ возращает сообщение чтобы попрощаться """
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'goodbye')), 'M'
 
     def buy_one_thing(self):
         """ Возращает пустое сообщение, чтобы основной код сделал заказ на продукт """
