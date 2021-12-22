@@ -97,8 +97,6 @@ class Bot:
 
     def big_handler(self):
         """ Здесь полномочия малой модели все, заапускаем тяжелую аретллерию """
-
-        print('Gpt2 у доски')
         me_token = False
         temperature = self.start_temperature
         input_network = self.response

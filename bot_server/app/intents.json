@@ -1,6 +1,17 @@
 {
   "intents": [
-    
+    {
+      "tag": "buy",
+      "patterns": [
+        "Купи",
+        "Закажи",
+        "Добавь в корзину"
+      ],
+      "responses": [
+        "Ы"
+      ],
+      "context_set": ""
+    },
     {
       "tag": "buy_bag",
       "patterns": [

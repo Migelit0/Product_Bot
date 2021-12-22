@@ -46,6 +46,11 @@ if __name__ == '__main__':
 
     nlp_bot = Bot(jokes, './data/models_trained/', intents)
     logger.info('Created nlp bot')
+    print(nlp_bot.get_answer('Закажи'))
+    print(nlp_bot.get_answer('Закажи мясо'))
+    print(nlp_bot.get_answer('Закажи молоко'))
+    print(nlp_bot.get_answer('Закажи напиток'))
+    print(nlp_bot.get_answer('Закажи попить'))
 
     net_bot = DeliveryBot(db_name, db_user, db_pass, db_host, (http_user, http_pass), server_ip, server_port)
     logger.info('Created net bot')
@@ -67,7 +72,7 @@ def answer_brilliant(message):
     logger.debug(f'User:{message.text}\tBot:{answer, answer_type}')
     if answer_type == 'M':
         bot.send_message(message.from_user.id, answer)
-    elif answer_type == 'B':
+    elif answer_type == 'P':
         requested_categories = []  # запоминаем категории которые закалази для дальнейшего отчета
         for word in text:
             with open('data/categories.json', 'r') as file:
@@ -76,7 +81,7 @@ def answer_brilliant(message):
             for category in categories_data:  # парсим все слова на предмет категории
                 if word == category or word in categories_data[category]:  # word является категорией, надо заказать
                     net_bot.request_by_category(category, net_bot.get_id_by_tg(message.from_user.id))
-                requested_categories.append(category)
+                    requested_categories.append(category)
 
         if len(requested_categories) >= 1:
             bot.send_message(message.from_user.id,

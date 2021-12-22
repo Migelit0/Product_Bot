@@ -25,7 +25,7 @@ type application struct {
 	}
 }
 
-func getDBConnection() *sql.DB {
+func getDBConnection() (*gorm.DB, *sql.DB) {
 	// подключаемся к базе
 	dbUri := getConnectrionString()
 	conn, err := gorm.Open(postgres.Open(dbUri), &gorm.Config{}) // подключение к базе
@@ -36,11 +36,11 @@ func getDBConnection() *sql.DB {
 	CheckError(err)
 	log.Println("Connected to db!") // вот и подключились
 
-	return db
+	return conn, db
 }
 
 func addToBag(w http.ResponseWriter, r *http.Request) {
-	db := getDBConnection()
+	_, db := getDBConnection()
 	defer db.Close() // закрываем соединение
 
 	vars := mux.Vars(r)
@@ -56,7 +56,7 @@ func addToBag(w http.ResponseWriter, r *http.Request) {
 }
 
 func getProduct(w http.ResponseWriter, r *http.Request) {
-	db := getDBConnection()
+	conn, db := getDBConnection()
 	defer db.Close() // закрываем соединение
 
 	vars := mux.Vars(r)
@@ -68,7 +68,7 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 	conn.Raw(sqlRequest, productId).Scan(&product)
 
 	log.Println(product)
-	err = json.NewEncoder(w).Encode(product)
+	err := json.NewEncoder(w).Encode(product)
 	CheckError(err)
 }
 
@@ -100,7 +100,7 @@ func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func searchProductByCategory(w http.ResponseWriter, r *http.Request) {
-	db := getDBConnection()
+	_, db := getDBConnection()
 	defer db.Close() // закрываем соединение
 
 	vars := mux.Vars(r)
@@ -125,7 +125,7 @@ func searchProductByCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchProductByName(w http.ResponseWriter, r *http.Request) {
-	db := getDBConnection()
+	_, db := getDBConnection()
 	defer db.Close() // закрываем соединение
 
 	vars := mux.Vars(r)
@@ -177,7 +177,7 @@ func main() {
 	fmt.Println(err)
 	CheckError(err)
 	app.auth.username = os.Getenv("auth_username")
-	app.auth.password = os.Getenv("auth_username")
+	app.auth.password = os.Getenv("auth_password")
 
 	if app.auth.username == "" {
 		log.Fatal("basic auth username must be provided")
