@@ -34,9 +34,9 @@ class Bot:
         self.answers = intents
 
         # создаем малую модель, объявляем обработчики для каждого типа сообщений
-        mappings = {'empty': self.big_handler, 'greeting': self.function_greeting, 'buy': self.buy_one_thing,
+        mappings = {'greeting': self.function_greeting, 'buy': self.buy_one_thing,
                     'bag': self.buy_all_bag, 'joke': self.tell_joke, 'howreu': self.function_howareyou,
-                    'goodbye': self.function_goodbye}
+                    'goodbye': self.function_goodbye, 'empty': self.big_handler}
         # TODO: Подключить остальные группы ответов
 
         self.small_model = GenericAssistant('app/intents.json', intent_methods=mappings,
@@ -67,15 +67,15 @@ class Bot:
         return self.message
 
     def function_greeting(self):
-        """ возращает сообщение чтобы поздороваться """
+        """ Возращает сообщение чтобы поздороваться """
         self.message = choice(get_messages_by_tag(self.answers['intents'], 'greeting')), 'M'
 
     def function_howareyou(self):
-        """ отвечает как дела """
+        """ Отвечает как дела """
         self.message = choice(get_messages_by_tag(self.answers['intents'], 'howreu')), 'M'
 
     def function_goodbye(self):
-        """ возращает сообщение чтобы попрощаться """
+        """ Возращает сообщение чтобы попрощаться """
         self.message = choice(get_messages_by_tag(self.answers['intents'], 'goodbye')), 'M'
 
     def buy_one_thing(self):
@@ -97,6 +97,8 @@ class Bot:
 
     def big_handler(self):
         """ Здесь полномочия малой модели все, заапускаем тяжелую аретллерию """
+
+        print('Gpt2 у доски')
         me_token = False
         temperature = self.start_temperature
         input_network = self.response
