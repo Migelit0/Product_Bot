@@ -1,7 +1,6 @@
 package main
 
 import (
-	"Product_Bot/shop_server/models"
 	"crypto/sha256"
 	"crypto/subtle"
 	"database/sql"
@@ -64,7 +63,7 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 
 	sqlRequest := `SELECT * FROM "products" WHERE id = $1;`
 
-	var product models.Product
+	var product Product
 	conn.Raw(sqlRequest, productId).Scan(&product)
 
 	log.Println(product)
@@ -111,9 +110,9 @@ func searchProductByCategory(w http.ResponseWriter, r *http.Request) {
 	raw, err := db.Query(sqlRequest, "%"+productCategory+"%")
 	CheckError(err)
 
-	var products []models.Product
+	var products []Product
 	for raw.Next() { // добавляем все данные из бд в массив
-		p := models.Product{}
+		p := Product{}
 		err := raw.Scan(&p.ID, &p.Name, &p.Price, &p.Categories)
 		CheckError(err)
 		products = append(products, p)
@@ -137,9 +136,9 @@ func searchProductByName(w http.ResponseWriter, r *http.Request) {
 	raw, err := db.Query(sqlRequest, productName, maxValue)
 	CheckError(err)
 
-	var products []models.Product
+	var products []Product
 	for raw.Next() { // добавляем все данные из бд в массив
-		p := models.Product{}
+		p := Product{}
 		err := raw.Scan(&p.ID, &p.Name, &p.Price, &p.Categories)
 		CheckError(err)
 		products = append(products, p)
@@ -156,7 +155,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getConnectrionString() string {
-	err := godotenv.Load("C:\\Users\\mmpan\\go\\src\\Product_Bot\\shop_server\\.env") //Загрузить файл .env
+	err := godotenv.Load("/home/server/telega/product_bot/shop_server/main.go") //Загрузить файл .env
 	fmt.Println(err)
 	CheckError(err)
 
@@ -173,11 +172,12 @@ func main() {
 	app := new(application)
 	//fmt.Println(os.Getenv("auth_username"))
 
-	err := godotenv.Load("C:\\Users\\mmpan\\go\\src\\Product_Bot\\shop_server\\.env") //Загрузить файл .env
+	err := godotenv.Load("/home/server/telega/product_bot/shop_server/.env") //Загрузить файл .env
+
 	fmt.Println(err)
 	CheckError(err)
-	app.auth.username = os.Getenv("auth_username")
-	app.auth.password = os.Getenv("auth_password")
+	app.auth.username = os.Getenv("AUTH_USERNAME")
+	app.auth.password = os.Getenv("AUTH_PASSWORD")
 
 	if app.auth.username == "" {
 		log.Fatal("basic auth username must be provided")
@@ -212,4 +212,21 @@ func CheckError(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+type Bag struct {
+	ID       int    `json:"id"`
+	User_ID  int    `json:"user_id"`
+	Products string `json:"products"`
+}
+
+type Product struct {
+	ID         int     `json:"id"`
+	Name       string  `json:"name"`
+	Price      float64 `json:"price"`
+	Categories string  `json:"categories"`
+}
+type User struct {
+	ID      int    `json:"id"`
+	API_key string `json:"api_key"`
 }
