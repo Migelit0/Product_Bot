@@ -85,6 +85,12 @@ def answer_brilliant(message):
         else:
             bot.send_message(message.from_user.id, 'Извините, я не нашел продуктов в вашем сообщении')
 
+        if len(requested_categories) == 0:   # ищем конкретный товар
+            msg = message.text.split()
+            product_name = msg[1:]
+
+
+
 
 @bot.message_handler(
     content_types=['sticker', 'document', 'audio', 'photo', 'video', 'video_note', 'voice', 'location', 'contact'])

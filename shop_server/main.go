@@ -129,7 +129,7 @@ func searchProductByName(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	productName := vars["name"]
-	maxValue := 0.7
+	maxValue := 0.3
 
 	sqlRequest := `SELECT * FROM "products" WHERE similarity(name, $1) >= $2;` // строка для импорта данных
 
@@ -155,7 +155,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getConnectrionString() string {
-	err := godotenv.Load("/home/server/telega/product_bot/shop_server/main.go") //Загрузить файл .env
+	err := godotenv.Load("/home/server/telega/product_bot/shop_server/.env") //Загрузить файл .env
 	fmt.Println(err)
 	CheckError(err)
 
@@ -178,6 +178,7 @@ func main() {
 	CheckError(err)
 	app.auth.username = os.Getenv("AUTH_USERNAME")
 	app.auth.password = os.Getenv("AUTH_PASSWORD")
+	port := os.Getenv("http_port")
 
 	if app.auth.username == "" {
 		log.Fatal("basic auth username must be provided")
@@ -187,6 +188,7 @@ func main() {
 		log.Fatal("basic auth password must be provided")
 	}
 
+
 	myRouter := mux.NewRouter()
 	myRouter.HandleFunc("/", app.basicAuth(homePage))
 	myRouter.HandleFunc("/bag/{user_id}/{product_id}", app.basicAuth(addToBag))
@@ -195,7 +197,7 @@ func main() {
 	myRouter.HandleFunc("/search/product/name/{name}", app.basicAuth(searchProductByName))
 
 	srv := &http.Server{
-		Addr:         ":5445",
+		Addr:         port,
 		Handler:      myRouter,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
