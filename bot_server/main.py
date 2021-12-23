@@ -35,8 +35,8 @@ if __name__ == '__main__':
     db_port = os.getenv('db_port')
     db_pass = os.getenv('db_pass')
     token_password = os.getenv('token_password')
-    http_pass = os.getenv('auth_password')
-    http_user = os.getenv('auth_username')
+    http_pass = os.getenv('AUTH_PASSWORD')
+    http_user = os.getenv('AUTH_USERNAME')
     server_ip = os.getenv('server_ip')
     server_port = os.getenv('server_port')
 
@@ -69,21 +69,34 @@ def answer_brilliant(message):
         bot.send_message(message.from_user.id, answer)
     elif answer_type == 'P':
         requested_categories = []  # запоминаем категории которые закалази для дальнейшего отчета
+        declined_categories = []    # запоминаем запросы, по которым нет данных в бд
+
         for word in text.lower().split():
             with open('data/categories.json', 'r') as file:
                 categories_data = json.loads(file.read())['categories']
 
             for category in categories_data:  # парсим все слова на предмет категории
-                print(word, category, categories_data[category])
                 if word == category or word in categories_data[category]:  # word является категорией, надо заказать
-                    net_bot.request_by_category(category, net_bot.get_id_by_tg(message.from_user.id))
-                    requested_categories.append(category)
+                    is_ok = net_bot.request_by_category(category, net_bot.get_id_by_tg(message.from_user.id))
+                    
+                    if not is_ok:
+                        declined_categories.append(category)
+                    else:
+                        requested_categories.append(category)
 
-        if len(requested_categories) >= 1:
-            bot.send_message(message.from_user.id,
-                             f'Добавил в корзину продукты из категорий {", ".join(requested_categories)}')
+
+        splitter = '\n*'
+        if requested_categories and declined_categories:
+            msg = f'Добавил в корзину продукты из категорий \n*{splitter.join(requested_categories)}'
+            msg += f'\nНе найдены товары в категориях \n*{splitter.join(declined_categories)}'
+        elif requested_categories:
+            msg = f'Добавил в корзину продукты из категорий \n*{splitter.join(requested_categories)}'
+        elif declined_categories:
+            msg = f'Не найдены товары в категориях \n*{splitter.join(declined_categories)}'
         else:
-            bot.send_message(message.from_user.id, 'Извините, я не нашел продуктов в вашем сообщении')
+            msg = 'Извините, я не нашел продуктов в вашем сообщении'
+
+        bot.send_message(message.from_user.id, msg)
 
         if len(requested_categories) == 0:   # ищем конкретный товар
             msg = message.text.split()
@@ -99,7 +112,9 @@ def not_text_answer(message):
 
 
 logger.info('Started telegram bot')
-try:
-    bot.polling(none_stop=True, interval=1)
-except Exception:
-    bot.polling(none_stop=True, interval=1)
+
+while True:
+    try:
+        bot.polling(none_stop=True, interval=1)
+    except Exception as ex:
+        logger.error('ERROR ' * 10 + str(ex))

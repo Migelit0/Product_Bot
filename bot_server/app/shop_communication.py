@@ -25,12 +25,14 @@ class DeliveryBot:
 
     def request_by_category(self, category: str, user_id: int):
         """ Делает заказ, основываясь на выбранной категории и рекомендациях для данного пользователя """
+        product_id = -1
+
         url = self.http_url + f'/search/product/category/{category}'
         all_data = requests.get(url, auth=self.basicAuthCredentials).json()
 
         ids = [i['id'] for i in all_data]
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
-            sql_str = 'SELECT product_id FROM product_recommendations WHERE product_id IN %s ORDER BY purchases_number;'
+            sql_str = 'SELECT product_id FROM product_recommendations WHERE product_id IN %s ORDER BY (-1 *  purchases_number) LIMIT 1;'
             cursor.execute(sql_str, (tuple(ids),))
 
             try:
@@ -38,7 +40,10 @@ class DeliveryBot:
                     product_id = elem[0]
                     break
             except IndexError:  # не существует рекомендации на эту категорию для данного пользователя
-                return NoRecommendationError
+                return False
+
+        if product_id == -1:
+            return False
 
         url = self.http_url + f'/bag/{user_id}/{product_id}'    # запрос на добавление в корзину
         is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
@@ -48,7 +53,7 @@ class DeliveryBot:
 
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
             # обновлем количество покупок данного товара
-            sql_str = 'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE  product_id=$1;'
+            sql_str = 'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE  product_id=%s;'
             cursor.execute(sql_str, (product_id,))
         self.conn_db.commit()
         return True  # все круто сделали ребята вообще ребята молодцы отправляем отчет
@@ -73,7 +78,7 @@ if __name__ == '__main__':
     basicAuthCredentials = HTTPBasicAuth('testtest', 'testtest')
 
     # print(requests.get(f'http://localhost:5445/search/product/молоко', auth=basicAuthCredentials).json())
-    #print(requests.get(f'http://localhost:5445/bag/1/88', auth=basicAuthCredentials).json())
+    # print(requests.get(f'http://localhost:5445/bag/1/88', auth=basicAuthCredentials).json())
 
     # print(test.request_by_category('молоко', 1))
 
