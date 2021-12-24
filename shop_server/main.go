@@ -149,13 +149,33 @@ func searchProductByName(w http.ResponseWriter, r *http.Request) {
 	CheckError(err)
 }
 
+func createUser(w http.ResponseWriter, r *http.Request) {
+	var isOk int
+	_, db := getDBConnection()
+	defer db.Close() // закрываем соединение
+
+	sqlRequest := `INSERT INTO users (bag) VALUES(' ') RETURNING id;` // строка для импорта данных
+	raw, err := db.Query(sqlRequest)
+	CheckError(err)
+
+	for raw.Next() {
+		err = raw.Scan(&isOk)
+		CheckError(err)
+	}
+
+	fmt.Println(isOk)
+
+	err = json.NewEncoder(w).Encode(isOk)
+	CheckError(err)
+}
+
 func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the HomePage!")
 	fmt.Println("Endpoint Hit: homePage")
 }
 
 func getConnectrionString() string {
-	err := godotenv.Load("/home/server/telega/product_bot/shop_server/.env") //Загрузить файл .env
+	err := godotenv.Load("/home/ubuntu/projects/product_bot/product_bot/shop_server/.env") //Загрузить файл .env
 	fmt.Println(err)
 	CheckError(err)
 
@@ -172,7 +192,7 @@ func main() {
 	app := new(application)
 	//fmt.Println(os.Getenv("auth_username"))
 
-	err := godotenv.Load("/home/server/telega/product_bot/shop_server/.env") //Загрузить файл .env
+	err := godotenv.Load("/home/ubuntu/projects/product_bot/product_bot/shop_server/.env") //Загрузить файл .env
 
 	fmt.Println(err)
 	CheckError(err)
@@ -188,13 +208,13 @@ func main() {
 		log.Fatal("basic auth password must be provided")
 	}
 
-
 	myRouter := mux.NewRouter()
 	myRouter.HandleFunc("/", app.basicAuth(homePage))
 	myRouter.HandleFunc("/bag/{user_id}/{product_id}", app.basicAuth(addToBag))
 	myRouter.HandleFunc("/product/{id}", app.basicAuth(getProduct))
 	myRouter.HandleFunc("/search/product/category/{category}", app.basicAuth(searchProductByCategory))
 	myRouter.HandleFunc("/search/product/name/{name}", app.basicAuth(searchProductByName))
+	myRouter.HandleFunc("/new/user/demo", app.basicAuth(createUser))
 
 	srv := &http.Server{
 		Addr:         port,
