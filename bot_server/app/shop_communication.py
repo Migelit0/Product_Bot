@@ -67,8 +67,10 @@ class DeliveryBot:
                 for elem in cursor:
                     return elem[0]
             except Exception:
-                return NoUserError
+                raise NoUserError
         return None
+
+    def create_new_user(self, tg_id: int, )
 
     def request_bag(self):
         pass

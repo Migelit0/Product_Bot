@@ -101,6 +101,7 @@ def answer_brilliant(message):
         if len(requested_categories) == 0:   # ищем конкретный товар
             msg = message.text.split()
             product_name = msg[1:]
+            
 
 
 
