@@ -66,7 +66,7 @@ class DeliveryBot:
                 for elem in cursor:
                     return elem[0]
             except Exception:
-                return NoUserError
+                raise NoUserError
         return None
 
     def create_user(self, tg_id: int):

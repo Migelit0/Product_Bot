@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import coloredlogs
 import json
 import logging
 import os
-
-import coloredlogs
 import telebot
-from dotenv import load_dotenv
-
 from app.bot import Bot
 from app.shop_communication import DeliveryBot
 from app.utilities import format_text
+from dotenv import load_dotenv
 
 if __name__ == '__main__':
     # создаем логгер
@@ -69,7 +67,7 @@ def answer_brilliant(message):
         bot.send_message(message.from_user.id, answer)
     elif answer_type == 'P':
         requested_categories = []  # запоминаем категории которые закалази для дальнейшего отчета
-        declined_categories = []    # запоминаем запросы, по которым нет данных в бд
+        declined_categories = []  # запоминаем запросы, по которым нет данных в бд
 
         for word in text.lower().split():
             with open('data/categories.json', 'r') as file:
@@ -78,12 +76,11 @@ def answer_brilliant(message):
             for category in categories_data:  # парсим все слова на предмет категории
                 if word == category or word in categories_data[category]:  # word является категорией, надо заказать
                     is_ok = net_bot.request_by_category(category, net_bot.get_id_by_tg(message.from_user.id))
-                    
+
                     if not is_ok:
                         declined_categories.append(category)
                     else:
                         requested_categories.append(category)
-
 
         splitter = '\n*'
         if requested_categories and declined_categories:
@@ -98,11 +95,9 @@ def answer_brilliant(message):
 
         bot.send_message(message.from_user.id, msg)
 
-        if len(requested_categories) == 0:   # ищем конкретный товар
+        if len(requested_categories) == 0:  # ищем конкретный товар
             msg = message.text.split()
             product_name = msg[1:]
-
-
 
 
 @bot.message_handler(
