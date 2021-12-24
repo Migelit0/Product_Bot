@@ -2,10 +2,9 @@
 
 import psycopg2
 import requests
+from app.models import *
 from psycopg2.extras import DictCursor
 from requests.auth import HTTPBasicAuth
-
-from app.models import *
 
 
 class DeliveryBot:
@@ -45,7 +44,7 @@ class DeliveryBot:
         if product_id == -1:
             return False
 
-        url = self.http_url + f'/bag/{user_id}/{product_id}'    # запрос на добавление в корзину
+        url = self.http_url + f'/bag/{user_id}/{product_id}'  # запрос на добавление в корзину
         is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
 
         if not is_ok:  # отловиили ошибку (пипец го-стайл)
@@ -70,6 +69,13 @@ class DeliveryBot:
                 return NoUserError
         return None
 
+    def create_user(self, tg_id: int):
+        """ Создает пустого пользователя как в системе магазина, так и в системе бота, связывая с данных тг аккаунтом """
+        # TODO: проверить существование такого пользователя
+        url = self.http_url + f'/new/user/demo'
+        shop_id = requests.get(url, auth=self.basicAuthCredentials).json()
+        print(shop_id)
+
     def request_bag(self):
         pass
 
@@ -81,9 +87,3 @@ if __name__ == '__main__':
     # print(requests.get(f'http://localhost:5445/bag/1/88', auth=basicAuthCredentials).json())
 
     # print(test.request_by_category('молоко', 1))
-
-    for x in range(1, 11):
-        for y in range(1, 17):
-            for z in range(1, 26):
-                if (y-z)>0 and (x-y)>0 and (y-z)%5==0 and (x-y)%3==0:
-                    print(x, y, z)

@@ -175,7 +175,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getConnectrionString() string {
-	err := godotenv.Load("/home/ubuntu/projects/product_bot/product_bot/shop_server/.env") //Загрузить файл .env
+	err := godotenv.Load("/home/server/telega/product_bot/shop_server/.env") //Загрузить файл .env
 	fmt.Println(err)
 	CheckError(err)
 
@@ -192,7 +192,7 @@ func main() {
 	app := new(application)
 	//fmt.Println(os.Getenv("auth_username"))
 
-	err := godotenv.Load("/home/ubuntu/projects/product_bot/product_bot/shop_server/.env") //Загрузить файл .env
+	err := godotenv.Load("/home/server/telega/product_bot/shop_server/.env") //Загрузить файл .env
 
 	fmt.Println(err)
 	CheckError(err)
