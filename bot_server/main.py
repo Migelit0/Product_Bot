@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import coloredlogs
 import json
 import logging
 import os
-
-import coloredlogs
 import telebot
-from dotenv import load_dotenv
-
 from app.bot import Bot
 from app.shop_communication import DeliveryBot
-from app.utilities import format_text
+from app.utilities import format_text, generate_report_text
+from dotenv import load_dotenv
 
 if __name__ == '__main__':
     # создаем логгер
@@ -53,11 +51,16 @@ if __name__ == '__main__':
 
 @bot.message_handler(commands=['start', 'help'])
 def welcome_message(message):
-    bot.send_message(message.from_user.id,
-                     'Привет! Поболтай со мной. Хоть я и не очень умный, но я готов учиться!\n'
-                     'Мои ~~внутренности~~ исходники можно найти на '
-                     'https://github.com/Migelit0/Product_Bot')
-    net_bot.create_user(message.from_user.id)
+    """ Создаем пользователя и высвечиваем приветственное сообщение"""
+    message_text = """Привет! Поболтай со мной. Хоть я и не очень умный, но я готов учиться!\n
+     Мои ~~внутренности~~ исходники можно найти на https://github.com/Migelit0/Product_Bot"""
+
+    is_created = net_bot.create_user(message.from_user.id)
+    if not is_created:
+        message_text = """Привет! Возникла ошибка при привязке вашего аккаунта.\n
+        Пожалуйста, обратитесь к админу (@Mige1ito) для решения этой проблемы."""
+
+    bot.send_message(message.from_user.id, message_text)
 
 
 @bot.message_handler(content_types=['text'])
@@ -69,41 +72,28 @@ def answer_brilliant(message):
     if answer_type == 'M':
         bot.send_message(message.from_user.id, answer)
     elif answer_type == 'P':
-        requested_categories = []  # запоминаем категории которые закалази для дальнейшего отчета
-        declined_categories = []    # запоминаем запросы, по которым нет данных в бд
+        requested_products = []  # запоминаем категории которые закалази для дальнейшего отчета
+        declined_categories = []  # запоминаем запросы, по которым нет данных в бд
 
-        for word in text.lower().split():
+        for word in text.lower().split():   # парсим все слова на предмет категории
             with open('data/categories.json', 'r') as file:
                 categories_data = json.loads(file.read())['categories']
 
-            for category in categories_data:  # парсим все слова на предмет категории
+            for category in categories_data:
                 if word == category or word in categories_data[category]:  # word является категорией, надо заказать
-                    is_ok = net_bot.request_by_category(category, net_bot.get_id_by_tg(message.from_user.id))
+                    is_ok, product = net_bot.request_by_category(category, net_bot.get_id_by_tg(message.from_user.id))
 
                     if not is_ok:
                         declined_categories.append(category)
                     else:
-                        requested_categories.append(category)
+                        requested_products.append((category, product))
 
-
-        splitter = '\n*'
-        if requested_categories and declined_categories:
-            msg = f'Добавил в корзину продукты из категорий \n*{splitter.join(requested_categories)}'
-            msg += f'\nНе найдены товары в категориях \n*{splitter.join(declined_categories)}'
-        elif requested_categories:
-            msg = f'Добавил в корзину продукты из категорий \n*{splitter.join(requested_categories)}'
-        elif declined_categories:
-            msg = f'Не найдены товары в категориях \n*{splitter.join(declined_categories)}'
-        else:
-            msg = 'Извините, я не нашел продуктов в вашем сообщении'
-
+        msg = generate_report_text(requested_products, declined_categories)
         bot.send_message(message.from_user.id, msg)
 
-        if len(requested_categories) == 0:   # ищем конкретный товар
+        if len(requested_products) == 0:  # TODO: ищем конкретный товар
             msg = message.text.split()
             product_name = msg[1:]
-
-
 
 
 @bot.message_handler(

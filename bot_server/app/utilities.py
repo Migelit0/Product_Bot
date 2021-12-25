@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import re
-
 import nltk
+import re
 from nltk import pos_tag
 from nltk.stem import wordnet
 
@@ -35,3 +34,23 @@ def format_text(message: str):
         lema_words.append(lema_token)
 
     return ' '.join(lema_words)
+
+
+def generate_report_text(requested_products, declined_categories):
+    """ Генерируем текст, оповещающий пользователя о купленных товарах """
+    msg = ''
+    if requested_products:
+        msg += 'Добавил в корзину слудующие товары:\n'
+        for elem in requested_products:
+            msg += f'*{elem[1]["name"]} ({elem[0]})\n'
+
+    if declined_categories:
+        msg += 'Не найдены товары в категориях:\n'
+        for elem in declined_categories:
+            msg += f'*{elem}'
+
+    if not msg: # Ничего не засунули
+        msg = 'Извините, я подумал, что вы хотите заказать товары, но видимо ошибся.\n' \
+              'Однако, если вы все же хотели заказать, то напишите мне "Закажи [название товара или категории]"'
+
+    return msg

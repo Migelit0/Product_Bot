@@ -39,23 +39,26 @@ class DeliveryBot:
                     product_id = elem[0]
                     break
             except IndexError:  # не существует рекомендации на эту категорию для данного пользователя
-                return False
+                return False, None
 
         if product_id == -1:
-            return False
+            return False, None
 
         url = self.http_url + f'/bag/{user_id}/{product_id}'  # запрос на добавление в корзину
         is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
 
-        if not is_ok:  # отловиили ошибку (пипец го-стайл)
-            return False
+        url = self.http_url + f'/product/{product_id}'       # запрос на получение товара
+        product = requests.get(url, auth=self.basicAuthCredentials).json()
+
+        if not is_ok:  # отловили ошибку (пипец го-стайл)
+            return False, None
 
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
             # обновлем количество покупок данного товара
             sql_str = 'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE  product_id=%s;'
             cursor.execute(sql_str, (product_id,))
         self.conn_db.commit()
-        return True  # все круто сделали ребята вообще ребята молодцы отправляем отчет
+        return True, product  # все круто сделали ребята вообще ребята молодцы отправляем отчет
 
     def get_id_by_tg(self, tg_id: int):
         """ Возращает id в системе магазина по id в телеге """
