@@ -66,15 +66,31 @@ class DeliveryBot:
                 for elem in cursor:
                     return elem[0]
             except Exception:
-                raise NoUserError
+                return NoUserError
         return None
 
     def create_user(self, tg_id: int):
         """ Создает пустого пользователя как в системе магазина, так и в системе бота, связывая с данных тг аккаунтом """
-        # TODO: проверить существование такого пользователя
+        with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
+            sql_str = 'SELECT * FROM bot_users WHERE tg_id=%s LIMIT 1;'
+            cursor.execute(sql_str, (tg_id,))
+
+            is_used = False
+            for _ in cursor: # проверяем есть ли такой пользователь уже
+                is_used = True
+
+        if is_used:
+            return False
+
         url = self.http_url + f'/new/user/demo'
         shop_id = requests.get(url, auth=self.basicAuthCredentials).json()
-        print(shop_id)
+
+        with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:  # соответственно слздаем пользователя
+            sql_str = 'INSERT INTO bot_users (shop_id, tg_id) VALUES(%s, %s);'
+            cursor.execute(sql_str, (shop_id, tg_id, ))
+        self.conn_db.commit()
+
+        return True
 
     def request_bag(self):
         pass
