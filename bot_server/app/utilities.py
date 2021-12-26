@@ -40,7 +40,7 @@ def generate_report_text(requested_products, declined_categories, maybe_products
     """ Генерируем текст, оповещающий пользователя о купленных товарах """
     msg = ''
     if requested_products:
-        msg += 'Добавил в корзину слудующие товары:\n'
+        msg += 'Добавил в корзину следующие товары:\n'
         for elem in requested_products:
             msg += f'*{elem[1]["name"]} ({elem[0]})\n'
 
@@ -52,7 +52,7 @@ def generate_report_text(requested_products, declined_categories, maybe_products
     if maybe_products and not requested_products and not declined_categories:
         msg += 'Название продукта имеет несколько сходств.\nНапишите "Закажи [полное название]"\n'
         for elem in maybe_products:
-            msg += f'*{elem["name"]}'
+            msg += f'*{elem["name"]}\n'
 
     if not msg: # Ничего не засунули
         msg = 'Извините, я подумал, что вы хотите заказать товары, но видимо ошибся.\n' \

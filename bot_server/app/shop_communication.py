@@ -32,8 +32,8 @@ class DeliveryBot:
 
         ids = [i['id'] for i in all_data]
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
-            sql_str = 'SELECT product_id FROM product_recommendations WHERE product_id IN %s ORDER BY (-1 *  purchases_number) LIMIT 1;'
-            cursor.execute(sql_str, (tuple(ids),))
+            sql_str = 'SELECT product_id FROM product_recommendations WHERE product_id IN %s AND user_id=%s ORDER BY (-1 *  purchases_number) LIMIT 1;'
+            cursor.execute(sql_str, (tuple(ids), user_id))
 
             try:
                 for elem in cursor:
