@@ -36,7 +36,7 @@ def format_text(message: str):
     return ' '.join(lema_words)
 
 
-def generate_report_text(requested_products, declined_categories):
+def generate_report_text(requested_products, declined_categories, maybe_products):
     """ Генерируем текст, оповещающий пользователя о купленных товарах """
     msg = ''
     if requested_products:
@@ -48,6 +48,11 @@ def generate_report_text(requested_products, declined_categories):
         msg += 'Не найдены товары в категориях:\n'
         for elem in declined_categories:
             msg += f'*{elem}'
+
+    if maybe_products and not requested_products and not declined_categories:
+        msg += 'Название продукта имеет несколько сходств.\nНапишите "Закажи [полное название]"\n'
+        for elem in maybe_products:
+            msg += f'*{elem["name"]}'
 
     if not msg: # Ничего не засунули
         msg = 'Извините, я подумал, что вы хотите заказать товары, но видимо ошибся.\n' \

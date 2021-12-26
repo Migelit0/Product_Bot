@@ -169,6 +169,26 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	CheckError(err)
 }
 
+func getMaxId(w http.ResponseWriter, r *http.Request){
+	var productId int
+	_, db := getDBConnection()
+	defer db.Close() // закрываем соединение
+
+	sqlRequest := `SELECT id FROM products ORDER BY (-1 * id) LIMIT 1;` // получение максимального айди (впадлу думать я устал)
+	raw, err := db.Query(sqlRequest)
+	CheckError(err)
+	fmt.Println(raw)
+
+	for raw.Next() {
+		err = raw.Scan(&productId)
+		CheckError(err)
+	}
+
+	err = json.NewEncoder(w).Encode(productId)
+	CheckError(err)
+}
+
+
 func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the HomePage!")
 	fmt.Println("Endpoint Hit: homePage")
@@ -215,6 +235,7 @@ func main() {
 	myRouter.HandleFunc("/search/product/category/{category}", app.basicAuth(searchProductByCategory))
 	myRouter.HandleFunc("/search/product/name/{name}", app.basicAuth(searchProductByName))
 	myRouter.HandleFunc("/new/user/demo", app.basicAuth(createUser))
+	myRouter.HandleFunc("/product/max/demo", app.basicAuth(getMaxId))
 
 	srv := &http.Server{
 		Addr:         port,

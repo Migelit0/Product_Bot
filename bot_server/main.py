@@ -11,9 +11,14 @@ from app.utilities import format_text, generate_report_text
 from dotenv import load_dotenv
 
 if __name__ == '__main__':
+    debug = True
+
     # создаем логгер
     logger = logging.getLogger(__name__)
-    coloredlogs.install(level='DEBUG')
+    if debug:
+        coloredlogs.install(level='DEBUG')
+    else:
+        coloredlogs.install(level='INFO')
 
     # загружаем анекдоты
     with open('data/jokes.json', 'r', encoding='utf-8') as file:
@@ -59,6 +64,9 @@ def welcome_message(message):
     if not is_created:
         message_text = """Привет! Возникла ошибка при привязке вашего аккаунта.\n
         Пожалуйста, обратитесь к админу (@Mige1ito) для решения этой проблемы."""
+    else:
+        if debug:
+            net_bot.create_demo_profile(message.from_user.id)
 
     bot.send_message(message.from_user.id, message_text)
 
@@ -74,8 +82,9 @@ def answer_brilliant(message):
     elif answer_type == 'P':
         requested_products = []  # запоминаем категории которые закалази для дальнейшего отчета
         declined_categories = []  # запоминаем запросы, по которым нет данных в бд
+        maybe_products = []  # список продуктов, которые искал бот
 
-        for word in text.lower().split():   # парсим все слова на предмет категории
+        for word in text.lower().split():  # парсим все слова на предмет категории
             with open('data/categories.json', 'r') as file:
                 categories_data = json.loads(file.read())['categories']
 
@@ -88,12 +97,18 @@ def answer_brilliant(message):
                     else:
                         requested_products.append((category, product))
 
-        msg = generate_report_text(requested_products, declined_categories)
-        bot.send_message(message.from_user.id, msg)
-
         if len(requested_products) == 0:  # TODO: ищем конкретный товар
             msg = message.text.split()
-            product_name = msg[1:]
+            product_name = ' '.join(msg[1:])
+            products = net_bot.search_by_name(product_name)
+            if len(products) == 1:  # подобный продукт один единственный
+                net_bot.request_by_id(products[0]['id'], message.from_user.id)
+                requested_products.append((products[0]['categories'].split(',')[0], products[0])) # страшно, но работает (хотфикс)
+            elif len(products) > 1:
+                maybe_products = products
+
+        msg = generate_report_text(requested_products, declined_categories, maybe_products)
+        bot.send_message(message.from_user.id, msg)
 
 
 @bot.message_handler(
@@ -105,7 +120,8 @@ def not_text_answer(message):
 logger.info('Started telegram bot')
 
 while True:
-    try:
-        bot.polling(none_stop=True, interval=1)
+    bot.polling(none_stop=True, interval=1)
+    try:    # сколько раз схема не подводила, поэтому не ругать
+        pass
     except Exception as ex:
         logger.error('ERROR ' * 10 + str(ex))

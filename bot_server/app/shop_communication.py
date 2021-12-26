@@ -4,6 +4,7 @@ import psycopg2
 import requests
 from app.models import *
 from psycopg2.extras import DictCursor
+from random import randint
 from requests.auth import HTTPBasicAuth
 
 
@@ -47,7 +48,7 @@ class DeliveryBot:
         url = self.http_url + f'/bag/{user_id}/{product_id}'  # запрос на добавление в корзину
         is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
 
-        url = self.http_url + f'/product/{product_id}'       # запрос на получение товара
+        url = self.http_url + f'/product/{product_id}'  # запрос на получение товара
         product = requests.get(url, auth=self.basicAuthCredentials).json()
 
         if not is_ok:  # отловили ошибку (пипец го-стайл)
@@ -55,10 +56,34 @@ class DeliveryBot:
 
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
             # обновлем количество покупок данного товара
-            sql_str = 'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE  product_id=%s;'
-            cursor.execute(sql_str, (product_id,))
+            sql_str = 'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE product_id=%s AND user_id=%s;'
+            cursor.execute(sql_str, (product_id, user_id))
         self.conn_db.commit()
         return True, product  # все круто сделали ребята вообще ребята молодцы отправляем отчет
+
+    def search_by_name(self, product_name: str):
+        """  Ищем продукты по названию продукта """
+        url = self.http_url + f'/search/product/name/{product_name.replace("%", "")}'  # запрос на получение товара
+        # реплейс это хот фикс простите
+        # TODO: нормально исправить данный трабл
+
+        products = requests.get(url, auth=self.basicAuthCredentials).json()
+        return products
+
+    def request_by_id(self, product_id: int, tg_ig: int):
+        """ Заказываем продукт по айдишнику """
+        user_id = self.get_id_by_tg(tg_ig)
+
+        url = self.http_url + f'/bag/{user_id}/{product_id}'  # запрос на получение товара
+        is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
+
+        with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
+            # обновлем количество покупок данного товара
+            sql_str = 'UPDATE product_recommendations SET purchases_number = purchases_number+1 WHERE product_id=%s AND user_id=%s;'
+            cursor.execute(sql_str, (product_id, user_id))
+        self.conn_db.commit()
+
+        return is_ok
 
     def get_id_by_tg(self, tg_id: int):
         """ Возращает id в системе магазина по id в телеге """
@@ -79,7 +104,7 @@ class DeliveryBot:
             cursor.execute(sql_str, (tg_id,))
 
             is_used = False
-            for _ in cursor: # проверяем есть ли такой пользователь уже
+            for _ in cursor:  # проверяем есть ли такой пользователь уже
                 is_used = True
 
         if is_used:
@@ -90,9 +115,28 @@ class DeliveryBot:
 
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:  # соответственно слздаем пользователя
             sql_str = 'INSERT INTO bot_users (shop_id, tg_id) VALUES(%s, %s);'
-            cursor.execute(sql_str, (shop_id, tg_id, ))
+            cursor.execute(sql_str, (shop_id, tg_id,))
         self.conn_db.commit()
 
+        return True
+
+    def create_demo_profile(self, tg_id: int):
+        """ Создаем демонстрационный профиль рекомендаций """
+        user_id = self.get_id_by_tg(tg_id)
+
+        url = self.http_url + f'/product/max/demo'
+        max_id = requests.get(url, auth=self.basicAuthCredentials).json()
+
+        with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
+            sql_str = 'INSERT INTO product_recommendations (user_id, product_id, purchases_number) VALUES(%s, %s, %s);'
+
+            for index in range(max_id):  # перебираем все возможные айдишники
+                url = self.http_url + f'/product/{index}'
+                product = requests.get(url, auth=self.basicAuthCredentials).json()
+                if product:  # такой продукт существует
+                    cursor.execute(sql_str, (user_id, product['id'], randint(1, 10)))
+
+        self.conn_db.commit()
         return True
 
     def request_bag(self):
