@@ -36,7 +36,10 @@ class Bot:
         # создаем малую модель, объявляем обработчики для каждого типа сообщений
         mappings = {'greeting': self.function_greeting, 'buy': self.buy_one_thing,
                     'bag': self.buy_all_bag, 'joke': self.tell_joke, 'howreu': self.function_howareyou,
-                    'goodbye': self.function_goodbye, 'empty': self.big_handler}
+                    'goodbye': self.function_goodbye, 'empty': self.big_handler, 'whoareu': self.function_whoareu,
+                    'whourcreator': self.function_whourcreator, 'thebestman': self.function_thebestman,
+                    'thebestpl': self.function_thebestpl, 'meaningoflife': self.function_meaningoflife,
+                    'umadeof': self.function_umadeof, 'urbrain': self.function_urbrain}
         # TODO: Подключить остальные группы ответов
 
         self.small_model = GenericAssistant('app/intents.json', intent_methods=mappings,
@@ -69,6 +72,34 @@ class Bot:
     def function_greeting(self):
         """ Возращает сообщение чтобы поздороваться """
         self.message = choice(get_messages_by_tag(self.answers['intents'], 'greeting')), 'M'
+
+    def function_whoareu(self):
+        """ Возвращает сообщение кто ты """
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'whoareu')), 'M'
+
+    def function_whourcreator(self):
+        """ Возвращает сообщение кто твой создатель """
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'whourcreator')), 'M'
+
+    def function_thebestman(self):
+        """ Возвращает сообщение лучший человек """
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'thebestman')), 'M'
+
+    def function_thebestpl(self):
+        """ Возвращает сообщение лучший язык программирования """
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'thebestpl')), 'M'
+
+    def function_meaningoflife(self):
+        """ Возвращает сообщение значение жизни """
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'meaningoflife')), 'M'
+
+    def function_umadeof(self):
+        """ Сообщение из чего ты сделан """
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'umadeof')), 'M'
+
+    def function_urbrain(self):
+        """ Сообщение какой у тебя мозг """
+        self.message = choice(get_messages_by_tag(self.answers['intents'], 'umadeof')), 'M'
 
     def function_howareyou(self):
         """ Отвечает как дела """
