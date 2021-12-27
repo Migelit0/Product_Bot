@@ -101,11 +101,12 @@ def answer_brilliant(message):
             msg = message.text.split()
             product_name = ' '.join(msg[1:])
             products = net_bot.search_by_name(product_name)
-            if len(products) == 1:  # подобный продукт один единственный
-                net_bot.request_by_id(products[0]['id'], message.from_user.id)
-                requested_products.append((products[0]['categories'].split(',')[0], products[0])) # страшно, но работает (хотфикс)
-            elif len(products) > 1:
-                maybe_products = products
+            if products:    # хотфикс для Даника
+                if len(products) == 1:  # подобный продукт один единственный
+                    net_bot.request_by_id(products[0]['id'], message.from_user.id)
+                    requested_products.append((products[0]['categories'].split(',')[0], products[0])) # страшно, но работает (хотфикс)
+                elif len(products) > 1:
+                    maybe_products = products
 
         msg = generate_report_text(requested_products, declined_categories, maybe_products)
         bot.send_message(message.from_user.id, msg)
@@ -120,8 +121,8 @@ def not_text_answer(message):
 logger.info('Started telegram bot')
 
 while True:
-    bot.polling(none_stop=True, interval=1)
+    # bot.polling(none_stop=True, interval=1)
     try:    # сколько раз схема не подводила, поэтому не ругать
-        pass
+        bot.polling(none_stop=True, interval=1)
     except Exception as ex:
         logger.error('ERROR ' * 10 + str(ex))

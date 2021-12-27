@@ -21,7 +21,7 @@ class DeliveryBot:
         self.basicAuthCredentials = HTTPBasicAuth(self.user_http, self.pass_http)
         self.server_ip = server_ip
         self.server_port = server_port
-        self.http_url = f'http://{self.server_ip}:{self.server_port}'
+        self.http_url = f'http://{self.server_ip}{self.server_port}'
 
     def request_by_category(self, category: str, user_id: int):
         """ Делает заказ, основываясь на выбранной категории и рекомендациях для данного пользователя """
