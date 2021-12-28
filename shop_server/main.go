@@ -128,6 +128,21 @@ func showBag(w http.ResponseWriter, r *http.Request) {
 	CheckError(err)
 }
 
+func clearBag(w http.ResponseWriter, r *http.Request) {
+	_, db := getDBConnection()
+	defer db.Close() // закрываем соединение
+
+	vars := mux.Vars(r)
+	userId := vars["user_id"]
+
+	sqlRequest := `UPDATE users SET bag=(';') WHERE id=$1;` // строка для импорта данных
+	raw, err := db.Query(sqlRequest, userId)
+	CheckError(err)
+	fmt.Println(raw)
+
+	fmt.Fprintf(w, "true") // отправляем, что все круто
+}
+
 func searchProductByCategory(w http.ResponseWriter, r *http.Request) {
 	_, db := getDBConnection()
 	defer db.Close() // закрываем соединение
@@ -260,6 +275,7 @@ func main() {
 	myRouter := mux.NewRouter()
 	myRouter.HandleFunc("/", app.basicAuth(homePage))
 	myRouter.HandleFunc("/bag/{user_id}/{product_id}", app.basicAuth(addToBag))
+	myRouter.HandleFunc("/bag/clear/{user_id}/", app.basicAuth(clearBag))
 	myRouter.HandleFunc("/bag/{user_id}", app.basicAuth(showBag))
 	myRouter.HandleFunc("/product/{id}", app.basicAuth(getProduct))
 	myRouter.HandleFunc("/search/product/category/{category}", app.basicAuth(searchProductByCategory))
