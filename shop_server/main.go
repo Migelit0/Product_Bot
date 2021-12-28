@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -22,6 +23,33 @@ type application struct {
 		username string
 		password string
 	}
+}
+
+func (app *application) protectedHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "This is the protected handler")
+}
+
+func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if ok {
+			usernameHash := sha256.Sum256([]byte(username))
+			passwordHash := sha256.Sum256([]byte(password))
+			expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
+			expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
+
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
+
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
 }
 
 func getDBConnection() (*gorm.DB, *sql.DB) {
@@ -71,31 +99,33 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 	CheckError(err)
 }
 
-func (app *application) protectedHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "This is the protected handler")
-}
+func showBag(w http.ResponseWriter, r *http.Request) {
+	conn, db := getDBConnection()
+	defer db.Close() // закрываем соединение
 
-func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		username, password, ok := r.BasicAuth()
-		if ok {
-			usernameHash := sha256.Sum256([]byte(username))
-			passwordHash := sha256.Sum256([]byte(password))
-			expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
-			expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
+	vars := mux.Vars(r)
+	userId := vars["user_id"]
 
-			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
-			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
+	sqlRequest := `SELECT bag FROM "users" WHERE id=$1 LIMIT 1;` // получаем корзину данного пользователя
 
-			if usernameMatch && passwordMatch {
-				next.ServeHTTP(w, r)
-				return
-			}
-		}
+	var userBagStr string
+	conn.Raw(sqlRequest, userId).Scan(&userBagStr)
 
-		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	})
+	userBag := strings.Split(userBagStr, ";")
+
+	var products []Product
+
+	for _, productId := range userBag {
+		sqlRequest := `SELECT * FROM "products" WHERE id = $1;` // инвалидное решение на скорую руку
+
+		var product Product
+		conn.Raw(sqlRequest, productId).Scan(&product)
+		products = append(products, product)
+	}
+
+	log.Println(products)
+	err := json.NewEncoder(w).Encode(products)
+	CheckError(err)
 }
 
 func searchProductByCategory(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +199,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	CheckError(err)
 }
 
-func getMaxId(w http.ResponseWriter, r *http.Request){
+func getMaxId(w http.ResponseWriter, r *http.Request) {
 	var productId int
 	_, db := getDBConnection()
 	defer db.Close() // закрываем соединение
@@ -187,7 +217,6 @@ func getMaxId(w http.ResponseWriter, r *http.Request){
 	err = json.NewEncoder(w).Encode(productId)
 	CheckError(err)
 }
-
 
 func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the HomePage!")
@@ -231,6 +260,7 @@ func main() {
 	myRouter := mux.NewRouter()
 	myRouter.HandleFunc("/", app.basicAuth(homePage))
 	myRouter.HandleFunc("/bag/{user_id}/{product_id}", app.basicAuth(addToBag))
+	myRouter.HandleFunc("/bag/{user_id}", app.basicAuth(showBag))
 	myRouter.HandleFunc("/product/{id}", app.basicAuth(getProduct))
 	myRouter.HandleFunc("/search/product/category/{category}", app.basicAuth(searchProductByCategory))
 	myRouter.HandleFunc("/search/product/name/{name}", app.basicAuth(searchProductByName))
