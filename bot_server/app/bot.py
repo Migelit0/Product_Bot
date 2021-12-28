@@ -35,12 +35,11 @@ class Bot:
 
         # создаем малую модель, объявляем обработчики для каждого типа сообщений
         mappings = {'greeting': self.function_greeting, 'buy': self.buy_one_thing,
-                    'bag': self.buy_all_bag, 'joke': self.tell_joke, 'howreu': self.function_howareyou,
+        'joke': self.tell_joke, 'howreu': self.function_howareyou, 'show_bag': self.function_show_bag,
                     'goodbye': self.function_goodbye, 'empty': self.big_handler, 'whoareu': self.function_whoareu,
                     'whourcreator': self.function_whourcreator, 'thebestman': self.function_thebestman,
                     'thebestpl': self.function_thebestpl, 'meaningoflife': self.function_meaningoflife,
                     'umadeof': self.function_umadeof, 'urbrain': self.function_urbrain}
-        # TODO: Подключить остальные группы ответов
 
         self.small_model = GenericAssistant('app/intents.json', intent_methods=mappings,
                                             model_name="small_model")  # легкая модель на сонове тщательно написанных ответов ранее
@@ -113,8 +112,8 @@ class Bot:
         """ Возращает пустое сообщение, чтобы основной код сделал заказ на продукт """
         self.message = None, 'P'
 
-    def buy_all_bag(self):
-        """ Возращает пустое сообщение, чтобы основной код сделал заказ на корзину """
+    def function_show_bag(self):
+        """ Возращает пустое сообщение, чтобы основной код показал корзину корзину """
         self.message = None, 'B'
 
     def tell_joke(self):

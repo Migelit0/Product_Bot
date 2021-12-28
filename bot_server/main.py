@@ -7,7 +7,7 @@ import os
 import telebot
 from app.bot import Bot
 from app.shop_communication import DeliveryBot
-from app.utilities import format_text, generate_report_text
+from app.utilities import format_text, generate_bag_text, generate_report_text
 from dotenv import load_dotenv
 
 if __name__ == '__main__':
@@ -78,7 +78,7 @@ def answer_brilliant(message):
     answer, answer_type = nlp_bot.get_answer(text)
     logger.debug(f'User:{message.text}\tBot:{answer, answer_type}')
     if answer_type == 'M':
-        bot.send_message(message.from_user.id, answer)
+        msg = answer
     elif answer_type == 'P':
         requested_products = []  # запоминаем категории которые закалази для дальнейшего отчета
         declined_categories = []  # запоминаем запросы, по которым нет данных в бд
@@ -97,7 +97,7 @@ def answer_brilliant(message):
                     else:
                         requested_products.append((category, product))
 
-        if len(requested_products) == 0:  # TODO: ищем конкретный товар
+        if len(requested_products) == 0:
             msg = message.text.split()
             product_name = ' '.join(msg[1:])
             products = net_bot.search_by_name(product_name)
@@ -109,7 +109,11 @@ def answer_brilliant(message):
                     maybe_products = products
 
         msg = generate_report_text(requested_products, declined_categories, maybe_products)
-        bot.send_message(message.from_user.id, msg)
+    elif answer_type == 'B':
+        bag = net_bot.get_user_bag(message.from_user.id)
+        msg = generate_bag_text(bag)
+
+    bot.send_message(message.from_user.id, msg)
 
 
 @bot.message_handler(
@@ -121,7 +125,7 @@ def not_text_answer(message):
 logger.info('Started telegram bot')
 
 while True:
-    # bot.polling(none_stop=True, interval=1)
+    bot.polling(none_stop=True, interval=1)
     try:    # сколько раз схема не подводила, поэтому не ругать
         bot.polling(none_stop=True, interval=1)
     except Exception as ex:

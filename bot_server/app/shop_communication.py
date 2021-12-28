@@ -120,6 +120,16 @@ class DeliveryBot:
 
         return True
 
+    def get_user_bag(self, tg_id: int):
+        """ Получаем корзину пользовтеля """ 
+        shop_id = self.get_id_by_tg(tg_id)
+        url = self.http_url + f'/bag/{tg_id}'
+
+        products = requests.get(url, auth=self.basicAuthCredentials).json()
+        print(products)
+        return products
+
+
     def create_demo_profile(self, tg_id: int):
         """ Создаем демонстрационный профиль рекомендаций """
         user_id = self.get_id_by_tg(tg_id)

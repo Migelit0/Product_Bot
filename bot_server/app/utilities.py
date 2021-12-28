@@ -61,46 +61,25 @@ def generate_report_text(requested_products, declined_categories, maybe_products
 
     return msg
 
+def generate_bag_text(bag: dict):
+    """ Генерируем текстовое представление корзины """
+    products = {}
 
+    if len(bag) > 1:
+        msg = 'Вот что я нашел в вашей корзине:\n'
+        for elem in bag:    # переформатируем все чтобы удобно было генерить
+            product_id = elem['id']
+            if product_id in products:
+                products[product_id]['number'] += 1
+            else:
+                products[product_id] = elem
+                products[product_id]['number'] = 1
 
-if __name__ == '__main__':
-    string = '''
-    {"tag": "whoareu", 
-    "patterns": ["Кто ты", "Ты кто", "Как тебя зовут"],
-    "responses": ["Ваш робот-помощник", "Григорий", "Чат-бот", "Бот", "Ваш помощник", "Ваш друг"],
-    "context_set":""
-    },
-    {"tag": "whourcreator", 
-    "patterns": ["Кто твой создатель", "Кто тебя создал", "кто твои родители", "Кто у тебя мама", "Кто папа?", "Кто тебя родил",],
-    "responses": ["Команда МОАУ "Гимназия №1", "Наш сокомандник", "Михаил Пантелеев"],
-    "context_set":""
-    },
-    {"tag": "thebestman", 
-    "patterns": ["Кто самый лучший человек", "Кто самый лучший человек на свете", "Кто лучший человек в мире", "Кто на свете вех милее"],
-    "responses": ["Моя команда и Вы", "Вы", "Наша семья и Вы"],
-    "context_set":""
-    },
-    {"tag": "thebestpl", 
-    "patterns": ["Какой язык программирования самый лучший", "Какой язык программирования лучший?"],
-    "responses": ["Все хороши", "Сложно выбрать какй-то один", "Я написан с помощью языка GoLang"],
-    "context_set":""
-    },
-    {"tag": "meaningoflife", 
-    "patterns": ["В чем смысл жизни", "Для чего мы живем", "Для чего ты живешь", "Для чего ты существуешь"],
-    "responses": ["Поесть", "Поспать", "Я живу, чтобы помогать Вам],
-    "context_set":""
-    },
-    {"tag": "umadeof", 
-    "patterns": ["Из чего ты состоишь", "Что входит в твой состав", "Что в тебя входит"],
-    "responses": ["Множество строк программного кода", "50%- любовь, 50%- программный код"],
-    "context_set":""
-    },
-    {"tag": "urbrain", 
-    "patterns": ["У тебя есть мозг", "У тебя мозг есть", "Что у тебя в голове"],
-    "responses": ["К чему такой вопрос?", "У меня в голове очень умный механизм- программный код"],
-    "context_set":""
-    }
-    '''
+        print(products)
 
+        for product in products.values():
+            msg += f"{product['number']}х {product['name']}\n"
+    else:
+        msg = 'Ваша корзина пуста'
 
-        
+    return msg
