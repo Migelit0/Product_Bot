@@ -2,11 +2,10 @@
 
 import os
 import random
-from random import choice
-
 from aitextgen import aitextgen
 from app.utilities import get_messages_by_tag
 from neuralintents import GenericAssistant
+from random import choice
 
 
 class Bot:
@@ -34,12 +33,13 @@ class Bot:
         self.answers = intents
 
         # создаем малую модель, объявляем обработчики для каждого типа сообщений
-        mappings = {'greeting': self.function_greeting, 'buy': self.buy_one_thing,
-        'joke': self.tell_joke, 'howreu': self.function_howareyou, 'show_bag': self.function_show_bag,
+        mappings = {'greeting': self.function_greeting, 'buy': self.buy_one_thing, 'joke': self.tell_joke,
+                    'howreu': self.function_howareyou, 'show_bag': self.function_show_bag,
                     'goodbye': self.function_goodbye, 'empty': self.big_handler, 'whoareu': self.function_whoareu,
                     'whourcreator': self.function_whourcreator, 'thebestman': self.function_thebestman,
                     'thebestpl': self.function_thebestpl, 'meaningoflife': self.function_meaningoflife,
-                    'umadeof': self.function_umadeof, 'urbrain': self.function_urbrain}
+                    'umadeof': self.function_umadeof, 'urbrain': self.function_urbrain,
+                    'clear_bag': self.function_clear}
 
         self.small_model = GenericAssistant('app/intents.json', intent_methods=mappings,
                                             model_name="small_model")  # легкая модель на сонове тщательно написанных ответов ранее
@@ -115,6 +115,10 @@ class Bot:
     def function_show_bag(self):
         """ Возращает пустое сообщение, чтобы основной код показал корзину корзину """
         self.message = None, 'B'
+
+    def function_clear(self):
+        """ Возращает пустое сообщение, чтобы основной код очистил корзину """
+        self.message = None, 'C'
 
     def tell_joke(self):
         """ Возращает случайный анекдот """

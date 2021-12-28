@@ -45,7 +45,7 @@ class DeliveryBot:
         if product_id == -1:
             return False, None
 
-        url = self.http_url + f'/bag/{user_id}/{product_id}'  # запрос на добавление в корзину
+        url = self.http_url + f'/bag/add/{user_id}/{product_id}'  # запрос на добавление в корзину
         is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
 
         url = self.http_url + f'/product/{product_id}'  # запрос на получение товара
@@ -74,7 +74,7 @@ class DeliveryBot:
         """ Заказываем продукт по айдишнику """
         user_id = self.get_id_by_tg(tg_ig)
 
-        url = self.http_url + f'/bag/{user_id}/{product_id}'  # запрос на получение товара
+        url = self.http_url + f'/bag/add/{user_id}/{product_id}'  # запрос на получение товара
         is_ok = requests.get(url, auth=self.basicAuthCredentials).json()
 
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
@@ -121,14 +121,20 @@ class DeliveryBot:
         return True
 
     def get_user_bag(self, tg_id: int):
-        """ Получаем корзину пользовтеля """ 
+        """ Получаем корзину пользовтеля """
         shop_id = self.get_id_by_tg(tg_id)
-        url = self.http_url + f'/bag/{tg_id}'
+        url = self.http_url + f'/bag/show/{shop_id}'
 
         products = requests.get(url, auth=self.basicAuthCredentials).json()
-        print(products)
         return products
 
+    def clear_user_bag(self, tg_id: int):
+        """ Очищаем корзину пользователя """
+        shop_id = self.get_id_by_tg(tg_id)
+        print(shop_id)
+        url = self.http_url + f'/bag/clear/{shop_id}'  # надеюсь тут все предельно ясно
+        requests.get(url, auth=self.basicAuthCredentials)
+        return True
 
     def create_demo_profile(self, tg_id: int):
         """ Создаем демонстрационный профиль рекомендаций """
@@ -143,7 +149,7 @@ class DeliveryBot:
             for index in range(max_id):  # перебираем все возможные айдишники
                 url = self.http_url + f'/product/{index}'
                 product = requests.get(url, auth=self.basicAuthCredentials).json()
-                if product:  # такой продукт существует
+                if product and str(product['id']) != '0':  # такой продукт существует
                     cursor.execute(sql_str, (user_id, product['id'], randint(1, 10)))
 
         self.conn_db.commit()

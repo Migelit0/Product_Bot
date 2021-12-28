@@ -116,11 +116,13 @@ func showBag(w http.ResponseWriter, r *http.Request) {
 	var products []Product
 
 	for _, productId := range userBag {
-		sqlRequest := `SELECT * FROM "products" WHERE id = $1;` // инвалидное решение на скорую руку
+		if productId != "" {	// потому что первый фантомный
+			sqlRequest := `SELECT * FROM "products" WHERE id=$1;` // инвалидное решение на скорую руку
 
-		var product Product
-		conn.Raw(sqlRequest, productId).Scan(&product)
-		products = append(products, product)
+			var product Product
+			conn.Raw(sqlRequest, productId).Scan(&product)
+			products = append(products, product)
+		}
 	}
 
 	log.Println(products)
@@ -133,10 +135,15 @@ func clearBag(w http.ResponseWriter, r *http.Request) {
 	defer db.Close() // закрываем соединение
 
 	vars := mux.Vars(r)
+	fmt.Println(vars)
 	userId := vars["user_id"]
 
-	sqlRequest := `UPDATE users SET bag=(';') WHERE id=$1;` // строка для импорта данных
+	fmt.Println("UserID:")
+	fmt.Println(userId)
+
+	sqlRequest := `UPDATE users SET bag=';' WHERE id=$1;` // строка для очистки данных
 	raw, err := db.Query(sqlRequest, userId)
+
 	CheckError(err)
 	fmt.Println(raw)
 
@@ -274,9 +281,9 @@ func main() {
 
 	myRouter := mux.NewRouter()
 	myRouter.HandleFunc("/", app.basicAuth(homePage))
-	myRouter.HandleFunc("/bag/{user_id}/{product_id}", app.basicAuth(addToBag))
-	myRouter.HandleFunc("/bag/clear/{user_id}/", app.basicAuth(clearBag))
-	myRouter.HandleFunc("/bag/{user_id}", app.basicAuth(showBag))
+	myRouter.HandleFunc("/bag/add/{user_id}/{product_id}", app.basicAuth(addToBag))
+	myRouter.HandleFunc("/bag/clear/{user_id}", app.basicAuth(clearBag))
+	myRouter.HandleFunc("/bag/show/{user_id}", app.basicAuth(showBag))
 	myRouter.HandleFunc("/product/{id}", app.basicAuth(getProduct))
 	myRouter.HandleFunc("/search/product/category/{category}", app.basicAuth(searchProductByCategory))
 	myRouter.HandleFunc("/search/product/name/{name}", app.basicAuth(searchProductByName))

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from dotenv import main
 import nltk
 import re
 from nltk import pos_tag
@@ -55,19 +54,20 @@ def generate_report_text(requested_products, declined_categories, maybe_products
         for elem in maybe_products:
             msg += f'*{elem["name"]}\n'
 
-    if not msg: # Ничего не засунули
+    if not msg:  # Ничего не засунули
         msg = 'Извините, я подумал, что вы хотите заказать товары, но видимо ошибся.\n' \
               'Однако, если вы все же хотели заказать, то напишите мне \n"Закажи [название товара или категории]"'
 
     return msg
 
+
 def generate_bag_text(bag: dict):
     """ Генерируем текстовое представление корзины """
     products = {}
 
-    if len(bag) > 1:
+    if bag:  # на всякий слцчай
         msg = 'Вот что я нашел в вашей корзине:\n'
-        for elem in bag:    # переформатируем все чтобы удобно было генерить
+        for elem in bag:  # переформатируем все чтобы удобно было генерить
             product_id = elem['id']
             if product_id in products:
                 products[product_id]['number'] += 1
@@ -78,7 +78,7 @@ def generate_bag_text(bag: dict):
         print(products)
 
         for product in products.values():
-            msg += f"{product['number']}х {product['name']}\n"
+            msg += f"* {product['number']}х {product['name']}\n"
     else:
         msg = 'Ваша корзина пуста'
 

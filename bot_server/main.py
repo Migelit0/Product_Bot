@@ -101,17 +101,28 @@ def answer_brilliant(message):
             msg = message.text.split()
             product_name = ' '.join(msg[1:])
             products = net_bot.search_by_name(product_name)
-            if products:    # хотфикс для Даника
+            if products:  # хотфикс для Даника
                 if len(products) == 1:  # подобный продукт один единственный
                     net_bot.request_by_id(products[0]['id'], message.from_user.id)
-                    requested_products.append((products[0]['categories'].split(',')[0], products[0])) # страшно, но работает (хотфикс)
+                    requested_products.append(
+                        (products[0]['categories'].split(',')[0], products[0]))  # страшно, но работает (хотфикс)
                 elif len(products) > 1:
                     maybe_products = products
 
         msg = generate_report_text(requested_products, declined_categories, maybe_products)
-    elif answer_type == 'B':
+    elif answer_type == 'B':  # отправляем корзину
         bag = net_bot.get_user_bag(message.from_user.id)
         msg = generate_bag_text(bag)
+    elif answer_type == 'C':  # очищаем корзину
+        is_ok = net_bot.clear_user_bag(message.from_user.id)
+        if is_ok:
+            msg = 'Ваша корзина успешно очищена'
+        else:
+            msg = 'Что-то пошло не так.\n' \
+                  'За расписанием тех работа следите на https://vk.com/projectorengym1 или пишите админу @Mige1ito'
+    else:
+        msg = 'Что-то пошло не так. \n' \
+              'За расписанием тех работа следите на https://vk.com/projectorengym1 или пишите админу @Mige1ito'
 
     bot.send_message(message.from_user.id, msg)
 
@@ -125,8 +136,7 @@ def not_text_answer(message):
 logger.info('Started telegram bot')
 
 while True:
-    bot.polling(none_stop=True, interval=1)
-    try:    # сколько раз схема не подводила, поэтому не ругать
+    try:  # сколько раз схема не подводила, поэтому не ругать
         bot.polling(none_stop=True, interval=1)
     except Exception as ex:
         logger.error('ERROR ' * 10 + str(ex))
