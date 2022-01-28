@@ -40,6 +40,19 @@
       "context_set": ""
     },
     {
+      "tag": "recommended_products",
+      "patterns": [
+        "Помоги выбрать",
+        "Предложи",
+        "Что можешь предложить из",
+        "Выбери"
+      ],
+      "responses": [
+        ""
+      ],
+      "context_set": ""
+    },
+    {
       "tag": "greeting",
       "patterns": [
         "Привет",

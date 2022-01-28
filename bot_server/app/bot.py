@@ -39,7 +39,7 @@ class Bot:
                     'whourcreator': self.function_whourcreator, 'thebestman': self.function_thebestman,
                     'thebestpl': self.function_thebestpl, 'meaningoflife': self.function_meaningoflife,
                     'umadeof': self.function_umadeof, 'urbrain': self.function_urbrain,
-                    'clear_bag': self.function_clear}
+                    'clear_bag': self.function_clear, 'recommended_products': self.recommended_products_func}
 
         self.small_model = GenericAssistant('app/intents.json', intent_methods=mappings,
                                             model_name="small_model")  # легкая модель на сонове тщательно написанных ответов ранее
@@ -119,6 +119,10 @@ class Bot:
     def function_clear(self):
         """ Возращает пустое сообщение, чтобы основной код очистил корзину """
         self.message = None, 'C'
+
+    def recommended_products_func(self):
+        """ Возвращает пустое сообщение, чтобы основной код показал рекомендуемые товары """
+        self.message = None, 'R'
 
     def tell_joke(self):
         """ Возращает случайный анекдот """

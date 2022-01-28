@@ -7,7 +7,7 @@ import os
 import telebot
 from app.bot import Bot
 from app.shop_communication import DeliveryBot
-from app.utilities import format_text, generate_bag_text, generate_report_text
+from app.utilities import format_text, generate_bag_text, generate_report_text, generate_recommendation_text
 from dotenv import load_dotenv
 
 if __name__ == '__main__':
@@ -79,7 +79,7 @@ def answer_brilliant(message):
     logger.debug(f'User:{message.text}\tBot:{answer, answer_type}')
     if answer_type == 'M':
         msg = answer
-    elif answer_type == 'P':
+    elif answer_type == 'P':  # Заказываем продукт
         requested_products = []  # запоминаем категории которые закалази для дальнейшего отчета
         declined_categories = []  # запоминаем запросы, по которым нет данных в бд
         maybe_products = []  # список продуктов, которые искал бот
@@ -110,6 +110,20 @@ def answer_brilliant(message):
                     maybe_products = products
 
         msg = generate_report_text(requested_products, declined_categories, maybe_products)
+    elif answer_type == 'R':  # показывааем рекомендованные продукты (помогаем выбрать)
+        all_products = {}
+
+        for word in text.lower().split():  # парсим все слова на предмет категории
+            with open('data/categories.json', 'r') as file:
+                categories_data = json.loads(file.read())['categories']
+
+            for category in categories_data:
+                if word == category or word in categories_data[category]:  # word является категорией
+                    is_ok, products = net_bot.get_recommendations(message.from_user.id, category)
+                    if is_ok:
+                        all_products[category] = products[:7]
+
+        msg = generate_recommendation_text(all_products)
     elif answer_type == 'B':  # отправляем корзину
         bag = net_bot.get_user_bag(message.from_user.id)
         msg = generate_bag_text(bag)
@@ -119,10 +133,10 @@ def answer_brilliant(message):
             msg = 'Ваша корзина успешно очищена'
         else:
             msg = 'Что-то пошло не так.\n' \
-                  'За расписанием тех работа следите на https://vk.com/projectorengym1 или пишите админу @Mige1ito'
+                  'За расписанием тех работ следите на https://vk.com/projectorengym1 или пишите админу @Mige1ito'
     else:
         msg = 'Что-то пошло не так. \n' \
-              'За расписанием тех работа следите на https://vk.com/projectorengym1 или пишите админу @Mige1ito'
+              'За расписанием тех работ следите на https://vk.com/projectorengym1 или пишите админу @Mige1ito'
 
     bot.send_message(message.from_user.id, msg)
 

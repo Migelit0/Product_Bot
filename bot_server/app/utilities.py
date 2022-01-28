@@ -78,8 +78,30 @@ def generate_bag_text(bag: dict):
         print(products)
 
         for product in products.values():
-            msg += f"* {product['number']}х {product['name']}\n"
+            if product['name']:
+                msg += f"* {product['number']}х {product['name']}\n"
     else:
         msg = 'Ваша корзина пуста'
+
+    return msg
+
+
+def generate_recommendation_text(products: dict):
+    """ Генерит текст о топе продуктов для пользователя """
+
+    msg = ''
+
+    if products:
+        for category in products:
+            if products[category]:
+                msg += f'В категории {category} подобраны следующие товары для вас:\n'
+                for elem in products[category]:
+                    if elem and elem['id']:
+                        msg += f'* {elem["name"]}\n'
+
+                msg += '\n'
+
+    if not msg:
+        msg = 'В данных категориях не найдены товары'
 
     return msg

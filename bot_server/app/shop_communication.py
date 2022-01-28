@@ -38,7 +38,6 @@ class DeliveryBot:
             try:
                 for elem in cursor:
                     product_id = elem[0]
-                    break
             except IndexError:  # не существует рекомендации на эту категорию для данного пользователя
                 return False, None
 
@@ -112,6 +111,7 @@ class DeliveryBot:
 
         url = self.http_url + f'/new/user/demo'
         shop_id = requests.get(url, auth=self.basicAuthCredentials).json()
+        print('\n\nSHOP ID HERE:', shop_id, type(shop_id), '\n\n')
 
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:  # соответственно слздаем пользователя
             sql_str = 'INSERT INTO bot_users (shop_id, tg_id) VALUES(%s, %s);'
@@ -141,19 +141,45 @@ class DeliveryBot:
         user_id = self.get_id_by_tg(tg_id)
 
         url = self.http_url + f'/product/max/demo'
-        max_id = requests.get(url, auth=self.basicAuthCredentials).json()
+        max_product_id = requests.get(url, auth=self.basicAuthCredentials).json()
 
         with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
             sql_str = 'INSERT INTO product_recommendations (user_id, product_id, purchases_number) VALUES(%s, %s, %s);'
 
-            for index in range(max_id):  # перебираем все возможные айдишники
+            for index in range(max_product_id):  # перебираем все возможные айдишники
                 url = self.http_url + f'/product/{index}'
-                product = requests.get(url, auth=self.basicAuthCredentials).json()
+                product = requests.get(url, auth=self.basicAuthCredentials).json()  # роверка есть ли такой продукт
                 if product and str(product['id']) != '0':  # такой продукт существует
                     cursor.execute(sql_str, (user_id, product['id'], randint(1, 10)))
 
         self.conn_db.commit()
         return True
+
+    def get_recommendations(self, tg_id: int, category: str):
+        """ Возвращает топ продуктов, рекомендоованных для данного пользователя """
+
+        user_id = self.get_id_by_tg(tg_id)
+
+        product_ids = []
+        out_products = []
+
+        with self.conn_db.cursor(cursor_factory=DictCursor) as cursor:
+            sql_str = 'SELECT product_id FROM product_recommendations WHERE user_id=%s ORDER BY (-1 *  purchases_number);'
+            cursor.execute(sql_str, (user_id,))
+
+            try:
+                for elem in cursor:
+                    product_ids.append(elem)
+            except IndexError:  # не существует рекомендации на эту категорию для данного пользователя
+                return False, None
+
+        for product_id in product_ids:
+            url = self.http_url + f'/product/{product_id[0]}'
+            product = requests.get(url, auth=self.basicAuthCredentials).json()
+            if category in product['categories'].split(','):
+                out_products.append(product)
+
+        return True, out_products
 
     def request_bag(self):
         pass
